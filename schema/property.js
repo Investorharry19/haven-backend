@@ -31,12 +31,10 @@ const schema = new Schema(
       lowercase: true,
     },
     propertyImagesUrl: {
-      type: [String],
-      default: [],
+      type: String,
     },
-    propertyImagesIds: {
-      type: [String],
-      default: [],
+    propertyImagesId: {
+      type: String,
     },
     description: {
       type: String,
