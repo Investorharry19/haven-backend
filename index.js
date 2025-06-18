@@ -45,7 +45,7 @@ const swaggerSpec = swaggerJsdoc(options);
 
 dotenv.config();
 const corsOptions = {
-  origin: ["http://localhost:3000"],
+  origin: ["http://localhost:3000/", "https://haven-backend.onrender.com/"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true,
 };
