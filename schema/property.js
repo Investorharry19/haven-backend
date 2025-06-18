@@ -11,7 +11,7 @@ const schema = new Schema(
       required: true,
       lowercase: true,
     },
-    propretyLocation: {
+    propertyLocation: {
       type: String,
       required: true,
       lowercase: true,
@@ -38,9 +38,8 @@ const schema = new Schema(
       type: [String],
       default: [],
     },
-    descripton: {
+    description: {
       type: String,
-      required: true,
       lowercase: true,
     },
     vacantUnits: {
