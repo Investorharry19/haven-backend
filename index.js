@@ -8,11 +8,42 @@ import http from "http";
 import cron from "node-cron";
 
 import UserRouter from "./routes/user.js";
+import PropertiesRouter from "./routes/property.js";
 import MessageRouter from "./routes/messages.js";
 import socketHandler from "./utils/socketHandlers.js";
 import deleteOldMedia from "./utils/deleteMedia.js";
+import swaggerJsdoc from "swagger-jsdoc";
+import * as swaggerUi from "swagger-ui-express";
 
 // import
+
+const options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Haven Properties API",
+      version: "1.0.0",
+    },
+    servers: [{ url: "http://localhost:4000" }],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ["./routes/*.js"],
+};
+
+const swaggerSpec = swaggerJsdoc(options);
 
 dotenv.config();
 const corsOptions = {
@@ -22,6 +53,7 @@ const corsOptions = {
 };
 
 const app = express();
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json());
@@ -38,6 +70,7 @@ const io = new Server(server, {
 app.set("io", io);
 
 app.use("/", UserRouter);
+app.use("/", PropertiesRouter);
 app.use("/", MessageRouter);
 app.get("/", (req, res) => {
   res

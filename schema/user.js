@@ -15,6 +15,8 @@ const schema = new Schema(
     personal: {
       fullName: String,
       avatarUrl: String,
+      phoneNumber: String,
+      imageId: String,
     },
     companyInfo: {
       companyName: String,

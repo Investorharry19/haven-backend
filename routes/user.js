@@ -8,6 +8,9 @@ import {
   sendPasswordResetEmail,
 } from "../utils/sendEmail.js";
 import axios from "axios";
+import upload from "../utils/multer.js";
+import cloud from "../utils/cloudinary.js";
+import { promisify } from "util";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const UserRouter = Router();
@@ -53,7 +56,7 @@ UserRouter.post("/auth/register", async (req, res) => {
       result.email,
       req.body.fullName,
       process.env.FRONTENDURL +
-        "/verify-email?token=" +
+        "/auth/verify-email?token=" +
         emailConfirmationToken +
         "&email=" +
         result.email
@@ -173,7 +176,7 @@ UserRouter.post("/auth/login", async (req, res) => {
         user.email,
         user.email,
         process.env.FRONTENDURL +
-          "/verify-email?token=" +
+          "/auth/verify-email?token=" +
           emailConfirmationToken +
           "&email=" +
           user.email
@@ -337,4 +340,166 @@ UserRouter.post("/account/google-auth", async (req, res) => {
     res.status(500).json({ error });
   }
 });
+
+// edits
+
+// personal details without image
+UserRouter.patch(
+  "/auth/edit-user",
+
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
+
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET);
+      const flatData = {
+        email: req.body.email,
+        personal: { ...req.body },
+      };
+
+      const user = await UserSchema.findOneAndUpdate(
+        { _id: userId.Id },
+        { $set: flatData },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          message: "user not found",
+        });
+      }
+
+      // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
+      console.log(user);
+      res.status(200).json({ message: "User edit sucessful" });
+    } catch (error) {
+      console.log(error);
+      if (error.name == "TokenExpiredError") {
+        console.log("WWWWWWWWWWWWWWWWWWW");
+        return res.status(460).json({ message: "Token already used!" });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return res.status(461).json({ message: "invalid token!" });
+      }
+      res.status(500).json(error);
+    }
+  }
+);
+//personal details with image
+UserRouter.patch(
+  "/auth/edit-user-with-image",
+  upload.fields([{ name: "avatarFile" }]),
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
+
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET);
+      const flatData = {
+        email: req.body.email,
+        personal: { ...req.body },
+      };
+      const user = await UserSchema.findOneAndUpdate(
+        { _id: userId.Id },
+
+        { $set: flatData },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          message: "user not found",
+        });
+      }
+
+      let imageUrl;
+      await Promise.all(
+        req.files.avatarFile.map(async (image) => {
+          const uploadPromise = promisify(cloud.uploader.upload);
+          const result = await uploadPromise(image.path);
+          imageUrl = {
+            avatarUrl: result.secure_url,
+            imageId: result.public_id,
+          };
+        })
+      );
+      if (user.personal.imageId) {
+        cloud.uploader
+          .destroy(user.personal.imageId)
+          .then(async (result) => {});
+      }
+      user.personal.avatarUrl = imageUrl.avatarUrl;
+      user.personal.imageId = imageUrl.imageId;
+      await user.save();
+      // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
+      res.status(200).json({ message: "User edit sucessful" });
+    } catch (error) {
+      console.log(error);
+      if (error.name == "TokenExpiredError") {
+        console.log("WWWWWWWWWWWWWWWWWWW");
+        return res.status(460).json({ message: "Token already used!" });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return res.status(461).json({ message: "invalid token!" });
+      }
+      res.status(500).json(error);
+    }
+  }
+);
+
+// company details without image
+UserRouter.patch(
+  "/auth/edit-company-info",
+
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
+
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET);
+      let userPlaceHolder = await UserSchema.findOne({
+        _id: userId.Id,
+      });
+      const user = await UserSchema.findOneAndUpdate(
+        { _id: userId.Id },
+        {
+          companyInfo: req.body,
+        },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          message: "user not found",
+        });
+      }
+
+      // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
+      res.status(200).json({ message: "Company info edit sucessful" });
+    } catch (error) {
+      console.log(error);
+      if (error.name == "TokenExpiredError") {
+        console.log("WWWWWWWWWWWWWWWWWWW");
+        return res.status(460).json({ message: "Token already used!" });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return res.status(461).json({ message: "invalid token!" });
+      }
+      res.status(500).json(error);
+    }
+  }
+);
 export default UserRouter;

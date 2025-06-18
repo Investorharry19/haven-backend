@@ -2,37 +2,59 @@ import mongoose, { Schema, mongo } from "mongoose";
 
 const schema = new Schema(
   {
-    ownerUsername: {
+    userId: {
+      type: String,
+      required: true,
+    },
+    propertyName: {
       type: String,
       required: true,
       lowercase: true,
     },
-    type: {
+    propretyLocation: {
       type: String,
       required: true,
+      lowercase: true,
     },
-    messageText: {
+    country: {
       type: String,
+      required: true,
+      lowercase: true,
     },
-    audioUrl: {
+    numberOfUnits: {
+      type: Number,
+      required: true,
+    },
+    propertyType: {
       type: String,
+      required: true,
+      lowercase: true,
     },
-    isOpened: {
-      type: Boolean,
-      default: false,
+    propertyImagesUrl: {
+      type: [String],
+      default: [],
     },
-    publicId: {
+    propertyImagesIds: {
+      type: [String],
+      default: [],
+    },
+    descripton: {
       type: String,
-      default: "",
+      required: true,
+      lowercase: true,
     },
-    isStarred: {
-      type: Boolean,
-      default: false,
+    vacantUnits: {
+      type: Number,
+      default: 0,
+    },
+    pendingUnits: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
 );
 
-const MessagesSchema = mongoose.model("properties", schema);
+const HavenProperties = mongoose.model("haven-properties", schema);
 
-export default MessagesSchema;
+export default HavenProperties;
