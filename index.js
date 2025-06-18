@@ -5,13 +5,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import http from "http";
-import cron from "node-cron";
 
 import UserRouter from "./routes/user.js";
 import PropertiesRouter from "./routes/property.js";
 import MessageRouter from "./routes/messages.js";
 import socketHandler from "./utils/socketHandlers.js";
-import deleteOldMedia from "./utils/deleteMedia.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import * as swaggerUi from "swagger-ui-express";
 
@@ -55,6 +53,7 @@ const corsOptions = {
 const app = express();
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
@@ -100,8 +99,3 @@ connectMongo();
 // app.listen(3000, () => {
 //   console.log("Server running on port 3000");
 // });
-
-cron.schedule("0 0 * * *", async () => {
-  await deleteOldMedia();
-  console.log("This runs every day at midnight");
-});
