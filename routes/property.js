@@ -90,7 +90,7 @@ PropertiesRouter.post(
       const newProperty = new HavenProperties({
         userId,
         propertyImagesUrl: imageUrl[0],
-        propertyImagesIds: imageIdS[0],
+        propertyImagesId: imageIdS[0],
         ...req.body,
       });
 
