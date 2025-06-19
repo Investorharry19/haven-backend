@@ -40,7 +40,7 @@ const schema = new Schema(
       type: String,
       lowercase: true,
     },
-    vacantUnits: {
+    occupiedUnits: {
       type: Number,
       default: 0,
     },

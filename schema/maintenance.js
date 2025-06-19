@@ -2,54 +2,34 @@ import mongoose, { Schema, mongo } from "mongoose";
 
 const schema = new Schema(
   {
+    landlordId: {
+      typr: String,
+      required: true,
+    },
+    maintenanceName: {
+      type: String,
+      require: true,
+    },
+    afectedUnit: {
+      type: String,
+      required: true,
+    },
+    attachments: {
+      type: [String],
+      default: [],
+    },
+    attachmentsId: {
+      type: [String],
+      default: [],
+    },
     propertyId: {
       type: String,
       required: true,
-    },
-    propertyName: {
-      type: String,
-      required: true,
-      lowercase: true,
-    },
-    propretyLocation: {
-      type: String,
-      required: true,
-      lowercase: true,
-    },
-    country: {
-      type: String,
-      required: true,
-      lowercase: true,
-    },
-    numberOfUnits: {
-      type: Number,
-      required: true,
-    },
-    propertyType: {
-      type: String,
-      required: true,
-      lowercase: true,
-    },
-    propertyImagesUrl: {
-      type: [String],
-      default: [],
-    },
-    propertyImagesIds: {
-      type: [String],
-      default: [],
     },
     descripton: {
       type: String,
       required: true,
       lowercase: true,
-    },
-    vacantUnits: {
-      type: Number,
-      default: 0,
-    },
-    pendingUnits: {
-      type: Number,
-      default: 0,
     },
   },
   { timestamps: true }
