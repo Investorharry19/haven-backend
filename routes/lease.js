@@ -131,7 +131,49 @@ HavenLeaseRouter.post(
  *       500:
  *         description: Internal server error
  */
-// create lease
+// create lease from landlord
+HavenLeaseRouter.post(
+  "/dashboard/create-landlord",
+  upload.fields([{ name: "avatar" }]),
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
+
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET).Id;
+
+      const newLease = new HavenLease({
+        ...req.body,
+        landlordId: userId,
+      });
+
+      let imageUrl = "";
+      let imageId = "";
+      await Promise.all(
+        req.files.avatar.map(async (image) => {
+          const uploadPromise = promisify(cloud.uploader.upload);
+          const result = await uploadPromise(image.path);
+          imageUrl = result.secure_url;
+          imageId = result.public_id;
+        })
+      );
+
+      newLease.avatar = imageUrl;
+      newLease.avatarPublidId = imageId;
+
+      await newLease.save();
+      res.status(201).json(newLease);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// ceate lease from tennt
 HavenLeaseRouter.post(
   "/dashboard/create-lease",
   upload.fields([{ name: "avatar" }]),
