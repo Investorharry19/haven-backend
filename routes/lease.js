@@ -92,7 +92,7 @@ HavenLeaseRouter.post(
       sendLeaseFormEmail(
         email,
         email,
-        `https://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
+        `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
         propertyDetails.propertyName
       );
 
