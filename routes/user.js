@@ -502,4 +502,46 @@ UserRouter.patch(
     }
   }
 );
+
+// security
+UserRouter.patch("/auth/edit-user-security", async (req, res) => {
+  try {
+    const { authorization } = req.headers;
+    if (!authorization || authorization.length < 10) {
+      return res.status(400).json({ message: "Invalid token in header" });
+    }
+
+    const token = authorization.split("Bearer ")[1];
+    const userId = jwt.verify(token, process.env.JWTSECRET);
+    const user = await UserSchema.findOne({ _id: userId.Id });
+    if (!user) {
+      return res.status(404).json({ message: "user not found" });
+    }
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const passwordMatch = await comparePassword(
+      user.passwordHash,
+      currentPassword
+    );
+    if (!passwordMatch) {
+      return res.status(400).json({ message: "Invalid current password" });
+    }
+    const newPasswordHash = await hashPassword(newPassword);
+    user.passwordHash = newPasswordHash;
+    user.version = user.version + 1;
+    await user.save();
+    res.status(200).json({ message: "Password updated successfully" });
+    return;
+  } catch (error) {
+    console.log(error);
+    if (error.name == "TokenExpiredError") {
+      console.log("WWWWWWWWWWWWWWWWWWW");
+      return res.status(460).json({ message: "Token already used!" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(461).json({ message: "invalid token!" });
+    }
+    res.status(500).json(error);
+  }
+});
+
 export default UserRouter;

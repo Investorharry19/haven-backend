@@ -33,6 +33,7 @@
     "streamifier": "^0.1.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "tmp": "^0.2.3"
+    "tmp": "^0.2.3",
+    "uuid": "^11.1.0"
   }
 }

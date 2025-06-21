@@ -12,6 +12,7 @@ import MessageRouter from "./routes/messages.js";
 import socketHandler from "./utils/socketHandlers.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import * as swaggerUi from "swagger-ui-express";
+import LeaseRouter from "./routes/lease.js";
 
 // import
 
@@ -80,6 +81,7 @@ app.set("io", io);
 app.use("/", UserRouter);
 app.use("/", PropertiesRouter);
 app.use("/", MessageRouter);
+app.use("/", LeaseRouter);
 app.get("/", (req, res) => {
   res
     .status(200)
