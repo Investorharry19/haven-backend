@@ -133,7 +133,7 @@ HavenLeaseRouter.post(
  */
 // create lease from landlord
 HavenLeaseRouter.post(
-  "/dashboard/create-landlord",
+  "/dashboard/landlord-create-lease",
   upload.fields([{ name: "avatar" }]),
   async (req, res) => {
     try {
@@ -175,7 +175,7 @@ HavenLeaseRouter.post(
 
 // ceate lease from tennt
 HavenLeaseRouter.post(
-  "/dashboard/create-lease",
+  "/dashboard/tenant-create-lease",
   upload.fields([{ name: "avatar" }]),
   async (req, res) => {
     try {
