@@ -180,6 +180,7 @@ HavenLeaseRouter.post(
   async (req, res) => {
     try {
       const { token } = req.body;
+      console.log("Token received:", token);
       const payload = jwt.verify(token, process.env.JWTSECRET);
       const usedToken = await UsedLeaseToken.findOne({
         jti: payload.usedLeaseToken.jti,
