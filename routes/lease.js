@@ -96,6 +96,10 @@ HavenLeaseRouter.post(
         propertyDetails.propertyName
       );
 
+      console.log(
+        `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`
+      );
+
       res.status(200).json({ token });
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -168,6 +172,7 @@ HavenLeaseRouter.post(
       await newLease.save();
       res.status(201).json(newLease);
     } catch (error) {
+      console.error("Error creating lease:", error);
       res.status(500).json({ message: error.message });
     }
   }
@@ -180,22 +185,19 @@ HavenLeaseRouter.post(
   async (req, res) => {
     try {
       const { token } = req.body;
-      console.log("Token received:", token);
+      // console.log("Token received:", token);
+      console.log(typeof token);
       const payload = jwt.verify(token, process.env.JWTSECRET);
       const usedToken = await UsedLeaseToken.findOne({
         jti: payload.usedLeaseToken.jti,
       });
+      console.log("Used token:", usedToken);
 
       if (usedToken && usedToken.used) {
         return res.status(400).json({ message: "Token already used!" });
       }
 
       // Mark as used
-      await UsedLeaseToken.updateOne(
-        { jti: payload.usedLeaseToken.jti },
-        { used: true },
-        { upsert: true }
-      );
 
       const newLease = new HavenLease({
         ...req.body,
@@ -203,6 +205,7 @@ HavenLeaseRouter.post(
         propertyId: payload.propertyId,
       });
 
+      console.log("New lease data:", newLease);
       let imageUrl = "";
       let imageId = "";
       await Promise.all(
@@ -214,15 +217,89 @@ HavenLeaseRouter.post(
         })
       );
 
+      await UsedLeaseToken.updateOne(
+        { jti: payload.usedLeaseToken.jti },
+        { used: true },
+        { upsert: true }
+      );
       newLease.avatar = imageUrl;
       newLease.avatarPublidId = imageId;
 
+      console.log("New lease data:", newLease);
       await newLease.save();
       res.status(201).json(newLease);
     } catch (error) {
+      console.error("Error creating lease:", error);
       res.status(500).json({ message: error.message });
     }
   }
 );
+
+/**
+ * @swagger
+ * /dashboard/tenant-create-lease:
+ *   post:
+ *     summary: Tenant creates a new lease using a token
+ *     tags: [Lease]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - tenantName
+ *               - tenantEmailAddress
+ *               - tenantUnit
+ *               - tenantGender
+ *               - tenantPhoneNumber
+ *               - leaseFee
+ *               - leaseCycle
+ *               - startsFrom
+ *               - endsOn
+ *               - leaseStatus
+ *               - avatar
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: JWT token containing lease and property details
+ *               tenantName:
+ *                 type: string
+ *               tenantEmailAddress:
+ *                 type: string
+ *               tenantUnit:
+ *                 type: string
+ *               tenantGender:
+ *                 type: string
+ *               tenantPhoneNumber:
+ *                 type: string
+ *               leaseFee:
+ *                 type: number
+ *               leaseCycle:
+ *                 type: string
+ *               startsFrom:
+ *                 type: string
+ *                 format: date
+ *               endsOn:
+ *                 type: string
+ *                 format: date
+ *               leaseStatus:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Lease created successfully
+ *         content:
+ *           application/json:
+ *
+ *
+ *       400:
+ *         description: Token already used or invalid
+ *       500:
+ *        description: Internal server error
+ */
 
 export default HavenLeaseRouter;
