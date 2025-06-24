@@ -63,7 +63,7 @@ HavenLeaseRouter.post(
       const userToken = authorization.split("Bearer ")[1];
       const landlordId = jwt.verify(userToken, process.env.JWTSECRET).Id;
 
-      const { propertyId, email } = req.body;
+      const { propertyId } = req.body;
       const propertyDetails = await HavenProperty.findOne({
         _id: propertyId,
       });
@@ -89,23 +89,43 @@ HavenLeaseRouter.post(
         }
       );
 
-      sendLeaseFormEmail(
-        email,
-        email,
-        `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
-        propertyDetails.propertyName
-      );
-
-      console.log(
-        `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`
-      );
-
       res.status(200).json({ token });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   }
 );
+
+HavenLeaseRouter.post("/dashboard/send-lease-as-emai", async (req, res) => {
+  try {
+    const { authorization } = req.headers;
+
+    if (!authorization || authorization.length < 10) {
+      return res.status(400).json({ message: "Invalid token in header" });
+    }
+
+    const userToken = authorization.split("Bearer ")[1];
+
+    const { token, email } = req.body;
+    const payload = jwt.verify(token, process.env.JWTSECRET);
+    const { propertyDetails } = payload;
+
+    sendLeaseFormEmail(
+      email,
+      email,
+      `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
+      propertyDetails.propertyName
+    );
+
+    console.log(
+      `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`
+    );
+
+    res.status(200).json({ token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 /**
  * @swagger
@@ -300,6 +320,64 @@ HavenLeaseRouter.post(
  *         description: Token already used or invalid
  *       500:
  *        description: Internal server error
+ */
+
+// landlord get all leases
+HavenLeaseRouter.get("/dashboard/get-lease", async (req, res) => {
+  try {
+    const { authorization } = req.headers;
+
+    if (!authorization || authorization.length < 10) {
+      return res.status(400).json({ message: "Invalid token in header" });
+    }
+
+    const token = authorization.split("Bearer ")[1];
+    const userId = jwt.verify(token, process.env.JWTSECRET).Id;
+
+    const leases = await HavenLease.find({ landlordId: userId });
+
+    res.status(200).json(leases);
+  } catch (error) {
+    console.log(error);
+    if (error.name == "TokenExpiredError") {
+      console.log("WWWWWWWWWWWWWWWWWWW");
+      return res.status(460).json({ message: "Token already used!" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(461).json({ message: "invalid token!" });
+    }
+    res.status(500).json(error);
+  }
+});
+
+/**
+ *
+ * @swagger
+ * /dashboard/get-lease:
+ *   get:
+ *     summary: Get all leases for the authenticated landlord
+ *     tags: [Lease]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of leases for the landlord
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *
+ *       400:
+ *         description: Invalid token in header
+ *       460:
+ *         description: Token already used!
+ *       461:
+ *         description: Invalid token!
+ *       500:
+ *         description: Internal server error
+ *
+ *
  */
 
 export default HavenLeaseRouter;
