@@ -96,7 +96,7 @@ HavenLeaseRouter.post(
   }
 );
 
-HavenLeaseRouter.post("/dashboard/send-lease-as-emai", async (req, res) => {
+HavenLeaseRouter.post("/dashboard/send-lease-as-email", async (req, res) => {
   try {
     const { authorization } = req.headers;
 
