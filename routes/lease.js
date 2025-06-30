@@ -106,9 +106,15 @@ HavenLeaseRouter.post("/dashboard/send-lease-as-email", async (req, res) => {
       return res.status(400).json({ message: "Invalid token in header" });
     }
 
-    const userToken = authorization.split("Bearer ")[1];
-
     const { url, email } = req.body;
+
+    function extractTokenFromUrl(url) {
+      const urlObj = new URL(url);
+      return urlObj.searchParams.get("token");
+    }
+
+    const token = extractTokenFromUrl(url);
+
     const payload = jwt.verify(token, process.env.JWTSECRET);
     const { propertyDetails } = payload;
 
