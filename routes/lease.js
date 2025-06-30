@@ -89,11 +89,9 @@ HavenLeaseRouter.post(
         }
       );
 
-      res
-        .status(200)
-        .json({
-          url: `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
-        });
+      res.status(200).json({
+        url: `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
+      });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -110,22 +108,13 @@ HavenLeaseRouter.post("/dashboard/send-lease-as-email", async (req, res) => {
 
     const userToken = authorization.split("Bearer ")[1];
 
-    const { token, email } = req.body;
+    const { url, email } = req.body;
     const payload = jwt.verify(token, process.env.JWTSECRET);
     const { propertyDetails } = payload;
 
-    sendLeaseFormEmail(
-      email,
-      email,
-      `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
-      propertyDetails.propertyName
-    );
+    sendLeaseFormEmail(email, email, url, propertyDetails.propertyName);
 
-    console.log(
-      `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`
-    );
-
-    res.status(200).json({ token });
+    res.status(200).json({ url });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
