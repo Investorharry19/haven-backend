@@ -89,7 +89,11 @@ HavenLeaseRouter.post(
         }
       );
 
-      res.status(200).json({ token });
+      res
+        .status(200)
+        .json({
+          url: `http://localhost:3000/tenant/submit-lease?token=${token}&propertyName=${propertyDetails.propertyName}`,
+        });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
