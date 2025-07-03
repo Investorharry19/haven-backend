@@ -9,6 +9,7 @@ import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
 
 const HavenLeaseRouter = Router();
+import HavenProperties from "../schema/property.js";
 
 /**
  * @swagger
@@ -172,6 +173,7 @@ HavenLeaseRouter.post(
       const newLease = new HavenLease({
         ...req.body,
         landlordId: userId,
+        status: "active",
       });
 
       let imageUrl = "";
@@ -189,6 +191,10 @@ HavenLeaseRouter.post(
       newLease.avatarPublidId = imageId;
 
       await newLease.save();
+      await HavenProperties.updateOne(
+        { _id: req.body.propertyId },
+        { $inc: { occupiedUnits: 1 } }
+      );
       res.status(201).json(newLease);
     } catch (error) {
       console.error("Error creating lease:", error);
@@ -246,6 +252,10 @@ HavenLeaseRouter.post(
 
       console.log("New lease data:", newLease);
       await newLease.save();
+      await HavenProperties.updateOne(
+        { _id: payload.propertyId },
+        { $inc: { pendingUnits: 1 } }
+      );
       res.status(201).json(newLease);
     } catch (error) {
       console.error("Error creating lease:", error);
