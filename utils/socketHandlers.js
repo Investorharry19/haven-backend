@@ -35,7 +35,7 @@ export default async function socketHandler(io, socket) {
       },
     ];
 
-    socket.emit("notifications:init", []);
+    socket.emit("notifications:init", notificationsData);
   } catch (err) {
     console.error("Failed to fetch notifications:", err);
   }
