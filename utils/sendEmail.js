@@ -218,3 +218,17 @@ export const sendLeaseFormEmail = async (
     throw new Error("Email not sent");
   }
 };
+
+export const sendFlwWebhookEmail = async (email, username, payload) => {
+  const { data, error } = await resend.emails.send({
+    from: "Haven <no-reply@voxa.buzz>",
+    to: email,
+    subject: "Flutterwave Webhook",
+    html: `
+      <h1>Flutterwave Webhook</h1>
+      <p>Hello ${username},</p>
+      <p>The Flutterwave webhook was called.</p>
+      <p>Payload: ${JSON.stringify(payload)}</p>
+    `,
+  });
+};

@@ -487,8 +487,7 @@ UserRouter.patch(
         });
       }
 
-      // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
-      res.status(200).json({ message: "Company info edit sucessful" });
+      res.status(200).json({ message: "Company info edit sucessful", user });
     } catch (error) {
       console.log(error);
       if (error.name == "TokenExpiredError") {

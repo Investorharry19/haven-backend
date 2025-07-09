@@ -13,6 +13,8 @@ import socketHandler from "./utils/socketHandlers.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import * as swaggerUi from "swagger-ui-express";
 import LeaseRouter from "./routes/lease.js";
+import FlwWebhook from "./routes/flwWebhook.js";
+import HavenNotificationRouter from "./routes/notification.js";
 
 // import
 
@@ -82,7 +84,9 @@ app.use("/", UserRouter);
 app.use("/", PropertiesRouter);
 app.use("/", MessageRouter);
 app.use("/", LeaseRouter);
-app.get("/", (req, res) => {
+app.use("/", FlwWebhook);
+app.use("/", HavenNotificationRouter);
+app.use("/", (req, res) => {
   res
     .status(200)
     .json({ message: "Done", cookie: req.cookies["ibm-device-id"] });
