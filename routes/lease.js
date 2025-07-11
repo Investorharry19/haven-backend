@@ -359,42 +359,67 @@ HavenLeaseRouter.get("/dashboard/get-lease", async (req, res) => {
   }
 });
 
-HavenLeaseRouter.patch("/dashboard/edit-lease/:leaseId", async (req, res) => {
-  try {
-    const { authorization } = req.headers;
-    const { leaseId } = req.params;
-    if (!authorization || authorization.length < 10) {
-      return res.status(400).json({ message: "Invalid token in header" });
-    }
+HavenLeaseRouter.patch(
+  "/dashboard/edit-lease/:leaseId",
+  upload.fields([{ name: "images" }]),
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+      const { leaseId } = req.params;
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
 
-    const token = authorization.split("Bearer ")[1];
-    const userId = jwt.verify(token, process.env.JWTSECRET);
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET);
 
-    const property = await HavenLease.findOneAndUpdate(
-      { landlordId: userId.Id, _id: leaseId },
+      const newLease = req.body;
 
-      { $set: req.body },
-      { new: true }
-    );
+      if (req.files && req.files.images) {
+        const oldLease = await HavenLease.findOne({
+          userId: userId.Id,
+          _id: leaseId,
+        });
 
-    if (!property) {
-      return res.status(404).json({
-        message: "Lease with this Id not found",
-      });
+        await Promise.all(
+          req.files.images.map(async (image) => {
+            const uploadPromise = promisify(cloud.uploader.upload);
+            const result = await uploadPromise(image.path);
+            newLease.avatar = result.secure_url;
+            newLease.avatarPublidId = result.public_id;
+          })
+        );
+        cloud.uploader
+          .destroy(oldLease.avatarPublidId)
+          .then(async (result) => {});
+      }
+
+      const property = await HavenLease.findOneAndUpdate(
+        { landlordId: userId.Id, _id: leaseId },
+
+        { $set: newLease },
+        { new: true }
+      );
+
+      if (!property) {
+        return res.status(404).json({
+          message: "Lease with this Id not found",
+        });
+      }
+      res.status(200).json({ message: "Lease edit sucessful", property });
+    } catch (error) {
+      console.log(error);
+      if (error.name == "TokenExpiredError") {
+        console.log("WWWWWWWWWWWWWWWWWWW");
+        return res.status(460).json({ message: "Token already used!" });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return res.status(461).json({ message: "invalid token!" });
+      }
+      res.status(500).json(error);
     }
-    res.status(200).json({ message: "Lease edit sucessful", property });
-  } catch (error) {
-    console.log(error);
-    if (error.name == "TokenExpiredError") {
-      console.log("WWWWWWWWWWWWWWWWWWW");
-      return res.status(460).json({ message: "Token already used!" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(461).json({ message: "invalid token!" });
-    }
-    res.status(500).json(error);
   }
-});
+);
 
 HavenLeaseRouter.delete(
   "/dashboard/delete-lease/:leaseId",

@@ -113,6 +113,7 @@ PropertiesRouter.post(
 
 PropertiesRouter.patch(
   "/dashboard/edit-property/:propertyId",
+  upload.fields([{ name: "images" }]),
   async (req, res) => {
     try {
       const { authorization } = req.headers;
@@ -124,10 +125,32 @@ PropertiesRouter.patch(
       const token = authorization.split("Bearer ")[1];
       const userId = jwt.verify(token, process.env.JWTSECRET);
 
+      const newProperty = req.body;
+
+      if (req.files && req.files.images) {
+        const oldProperty = await HavenProperties.findOne({
+          userId: userId.Id,
+          _id: propertyId,
+        });
+
+        await Promise.all(
+          req.files.images.map(async (image) => {
+            const uploadPromise = promisify(cloud.uploader.upload);
+            const result = await uploadPromise(image.path);
+            newProperty.propertyImagesUrl = result.secure_url;
+            newProperty.propertyImagesId = result.public_id;
+          })
+        );
+
+        cloud.uploader
+          .destroy(oldProperty.propertyImagesId)
+          .then(async (result) => {});
+      }
+
       const property = await HavenProperties.findOneAndUpdate(
         { userId: userId.Id, _id: propertyId },
 
-        { $set: req.body },
+        { $set: newProperty },
         { new: true }
       );
 
