@@ -8,16 +8,17 @@ import Notification from "../schema/notification.js";
  * @param {Object} options.payload
  * @param {Object} io
  */
-async function sendNotification({ userId, type, payload }, io) {
+async function sendNotification({ userId, type, payload, data }, io) {
   if (!io) throw new Error("Socket.IO instance not found");
 
   const notification = await Notification.create({
     userId,
     type,
     payload,
+    data,
   });
 
-  io.to(userId).emit("notifications:new", payload);
+  io.to(userId).emit("notifications:new", notification);
 
   return notification;
 }

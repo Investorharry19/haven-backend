@@ -20,22 +20,13 @@ export default async function socketHandler(io, socket) {
   socket.join(socket.user.Id);
 
   try {
-    // const notifications = await Notification.find({ userId: socket.user.id })
-    //   .sort({ createdAt: -1 })
-    //   .lean();
-    const notificationsData = [
-      {
-        _id: "3",
-        title: "Test Notification",
-        message: "This Notification is to test if the sockets work alwight",
-        date: "4 days ago",
-        type: "lease",
-        sub: "expiring",
-        read: false,
-      },
-    ];
+    const notifications = await Notification.find({
+      userId: socket.user.Id,
+    }).sort({ createdAt: -1 });
 
-    socket.emit("notifications:init", notificationsData);
+    console.log(notifications);
+
+    socket.emit("notifications:init", notifications);
   } catch (err) {
     console.error("Failed to fetch notifications:", err);
   }

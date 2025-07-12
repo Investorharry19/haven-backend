@@ -12,9 +12,8 @@ const notificationSchema = new mongoose.Schema(
       enum: ["message", "lease", "maintenance", "other"],
       required: true,
     },
-    title: { type: String, required: true },
-    body: { type: String, required: true },
-    data: { type: Object },
+    payload: { type: Object, required: true },
+    data: { type: Object, required: true },
     read: { type: Boolean, default: false },
   },
   { timestamps: true }

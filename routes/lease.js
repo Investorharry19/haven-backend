@@ -10,6 +10,7 @@ import { promisify } from "util";
 
 const HavenLeaseRouter = Router();
 import HavenProperties from "../schema/property.js";
+import sendNotification from "../utils/sendNotification.js";
 
 /**
  * @swagger
@@ -250,11 +251,30 @@ HavenLeaseRouter.post(
       newLease.avatar = imageUrl;
       newLease.avatarPublidId = imageId;
 
-      console.log("New lease data:", newLease);
       await newLease.save();
       await HavenProperties.updateOne(
         { _id: payload.propertyId },
         { $inc: { pendingUnits: 1 } }
+      );
+
+      const io = req.app.get("io");
+      const data = {
+        title: "New Lease From " + payload.tenantName,
+        message:
+          payload.tenantName +
+          " Just filled out the form sent to them. Please review and approve the lease request",
+        type: "lease",
+        sub: "lease-created",
+      };
+
+      sendNotification(
+        {
+          userId: payload.landlordId,
+          type: "lease",
+          payload: newLease,
+          data,
+        },
+        io
       );
       res.status(201).json(newLease);
     } catch (error) {

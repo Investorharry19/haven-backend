@@ -49,6 +49,7 @@ const schema = new Schema(
     leaseStatus: {
       type: String,
       required: true,
+      default: "pending",
     },
     avatar: {
       type: String,
@@ -57,11 +58,6 @@ const schema = new Schema(
     avatarPublidId: {
       type: String,
       required: true,
-    },
-    status: {
-      type: String,
-      required: true,
-      default: "pending",
     },
   },
   { timestamps: true }
