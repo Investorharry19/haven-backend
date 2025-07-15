@@ -441,6 +441,49 @@ HavenLeaseRouter.patch(
   }
 );
 
+HavenLeaseRouter.patch(
+  "/dashboard/approve-lease/:leaseId",
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+      const { leaseId } = req.params;
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
+
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET);
+
+      const lease = await HavenLease.findOneAndUpdate(
+        { landlordId: userId.Id, _id: leaseId },
+        { $set: { leaseStatus: "active" } },
+        { new: true }
+      );
+
+      if (!lease) {
+        return res.status(404).json({
+          message: "Lease with this Id not found",
+        });
+      }
+      await HavenProperties.updateOne(
+        { _id: lease.propertyId },
+        { $inc: { occupiedUnits: 1 } }
+      );
+      res.status(200).json({ message: "Lease edit sucessful", lease });
+    } catch (error) {
+      console.log(error);
+      if (error.name == "TokenExpiredError") {
+        console.log("WWWWWWWWWWWWWWWWWWW");
+        return res.status(460).json({ message: "Token already used!" });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return res.status(461).json({ message: "invalid token!" });
+      }
+      res.status(500).json(error);
+    }
+  }
+);
+
 HavenLeaseRouter.delete(
   "/dashboard/delete-lease/:leaseId",
   async (req, res) => {
