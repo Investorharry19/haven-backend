@@ -509,6 +509,12 @@ HavenLeaseRouter.delete(
       }
 
       cloud.uploader.destroy(lease.avatarPublidId).then(async (result) => {});
+      if (lease.leaseStatus == "active") {
+        await HavenProperties.updateOne(
+          { _id: lease.propertyId },
+          { $inc: { occupiedUnits: -1 } }
+        );
+      }
 
       res.status(200).json({ message: "Lease Delete sucessful" });
     } catch (error) {
