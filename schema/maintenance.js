@@ -18,7 +18,7 @@ const schema = new Schema(
       type: [String],
       default: [],
     },
-    attachmentsId: {
+    attachmentIds: {
       type: [String],
       default: [],
     },
@@ -30,6 +30,10 @@ const schema = new Schema(
       type: String,
       required: true,
       lowercase: true,
+    },
+    isResolved: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

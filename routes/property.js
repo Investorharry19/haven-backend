@@ -4,6 +4,7 @@ import upload from "../utils/multer.js";
 import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
 import jwt from "jsonwebtoken";
+import HavenLease from "../schema/lease.js";
 
 const PropertiesRouter = Router();
 
@@ -203,7 +204,22 @@ PropertiesRouter.delete(
         .destroy(property.propertyImagesId)
         .then(async (result) => {});
 
+      const leases = await HavenLease.find({ propertyId });
+
+      const leaseIds = leases.map((lease) => {
+        return lease._id;
+      });
+
+      await Promise.all(
+        leases.map((lease) => cloud.uploader.destroy(lease.avatarPublidId))
+      );
+      await Promise.all(
+        leaseIds.map((leaseId) => HavenLease.deleteOne({ _id: leaseId }))
+      );
+
       res.status(200).json({ message: "Property Deleted sucessful" });
+
+      // de
     } catch (error) {
       console.log(error);
       if (error.name == "TokenExpiredError") {

@@ -467,7 +467,7 @@ HavenLeaseRouter.patch(
       }
       await HavenProperties.updateOne(
         { _id: lease.propertyId },
-        { $inc: { occupiedUnits: 1 } }
+        { $inc: { occupiedUnits: 1, pendingUnits: -1 } }
       );
       res.status(200).json({ message: "Lease edit sucessful", lease });
     } catch (error) {
