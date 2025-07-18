@@ -2,34 +2,41 @@ import mongoose, { Schema, mongo } from "mongoose";
 
 const schema = new Schema(
   {
-    landlordId: {
+    requestCategory: {
+      type: String,
+      required: true,
+    },
+    requestType: {
+      type: String,
+      required: true,
+    },
+    affectedUnit: {
+      type: String,
+      required: true,
+    },
+    estimatedCost: {
+      type: Number,
+      required: true,
+    },
+    requestDescription: {
+      type: String,
+      required: true,
+    },
+    requestImages: {
+      type: [String],
+      required: true,
+    },
+    requestImagePublicIds: {
+      type: [String],
+      required: true,
+    },
+    propertyId: {
       typr: String,
       required: true,
     },
-    maintenanceName: {
-      type: String,
-      require: true,
-    },
-    afectedUnit: {
-      type: String,
+    landlordId: {
+      typr: String,
       required: true,
-    },
-    attachments: {
-      type: [String],
-      default: [],
-    },
-    attachmentIds: {
-      type: [String],
-      default: [],
-    },
-    propertyId: {
-      type: String,
-      required: true,
-    },
-    descripton: {
-      type: String,
-      required: true,
-      lowercase: true,
     },
     isResolved: {
       type: Boolean,
