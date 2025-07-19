@@ -66,12 +66,16 @@ HavenMaintenanceRouter.post(
         type: "maintenance",
       };
 
-      await sendNotification({
-        userId: req.body.landlordId,
-        type: "maintenance",
-        payload: maintenance,
-        data,
-      });
+      const io = req.app.get("io");
+      sendNotification(
+        {
+          userId: req.body.landlordId,
+          type: "maintenance",
+          payload: maintenance,
+          data,
+        },
+        io
+      );
       await maintenance.save();
       res.status(200).json({ message: "Sucessful", maintenance });
     } catch (error) {
