@@ -24,19 +24,19 @@ export default async function socketHandler(io, socket) {
       userId: socket.user.Id,
     }).sort({ createdAt: -1 });
 
-    console.log(notifications);
-
     socket.emit("notifications:init", notifications);
   } catch (err) {
     console.error("Failed to fetch notifications:", err);
   }
 
   socket.on("notifications:read", async (ids) => {
+    console.log(ids);
     try {
-      await Notification.updateMany(
-        { _id: { $in: ids }, userId: socket.user.id },
+      const no = await Notification.updateMany(
+        { _id: { $in: ids }, userId: socket.user.Id },
         { $set: { read: true } }
       );
+      console.log(no);
     } catch (err) {
       console.error("Error updating read notifications:", err);
     }
@@ -47,7 +47,7 @@ export default async function socketHandler(io, socket) {
     try {
       await Notification.deleteMany({
         _id: { $in: ids },
-        userId: socket.user.id,
+        userId: socket.user.Id,
       });
     } catch (err) {
       console.error("Error deleting notifications:", err);

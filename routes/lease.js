@@ -242,6 +242,7 @@ HavenLeaseRouter.post(
           imageId = result.public_id;
         })
       );
+      console.log(payload);
 
       await UsedLeaseToken.updateOne(
         { jti: payload.usedLeaseToken.jti },
@@ -259,9 +260,9 @@ HavenLeaseRouter.post(
 
       const io = req.app.get("io");
       const data = {
-        title: "New Lease From " + payload.tenantName,
+        title: "New Lease From " + req.body.tenantName,
         message:
-          payload.tenantName +
+          req.body.tenantName +
           " Just filled out the form sent to them. Please review and approve the lease request",
         type: "lease",
         sub: "lease-created",

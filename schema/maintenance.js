@@ -24,18 +24,18 @@ const schema = new Schema(
     },
     requestImages: {
       type: [String],
-      required: true,
+      default: [],
     },
     requestImagePublicIds: {
       type: [String],
-      required: true,
+      default: [],
     },
     propertyId: {
-      typr: String,
+      type: String,
       required: true,
     },
     landlordId: {
-      typr: String,
+      type: String,
       required: true,
     },
     isResolved: {
@@ -46,6 +46,6 @@ const schema = new Schema(
   { timestamps: true }
 );
 
-const HavenMaintenance = mongoose.model("haven-maintenance", schema);
+const HavenMaintenance = mongoose.model("maintenance", schema);
 
 export default HavenMaintenance;

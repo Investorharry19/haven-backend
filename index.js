@@ -15,6 +15,7 @@ import * as swaggerUi from "swagger-ui-express";
 import LeaseRouter from "./routes/lease.js";
 import FlwWebhook from "./routes/flwWebhook.js";
 import HavenNotificationRouter from "./routes/notification.js";
+import HavenMaintenanceRouter from "./routes/maintenance.js";
 
 // import
 
@@ -86,6 +87,7 @@ app.use("/", MessageRouter);
 app.use("/", LeaseRouter);
 app.use("/", FlwWebhook);
 app.use("/", HavenNotificationRouter);
+app.use("/", HavenMaintenanceRouter);
 app.use("/", (req, res) => {
   res
     .status(200)
