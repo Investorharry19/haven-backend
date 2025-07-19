@@ -16,7 +16,6 @@ const schema = new Schema(
     },
     estimatedCost: {
       type: Number,
-      required: true,
     },
     requestDescription: {
       type: String,

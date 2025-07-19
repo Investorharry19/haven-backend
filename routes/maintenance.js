@@ -53,8 +53,8 @@ HavenMaintenanceRouter.post(
           })
         );
 
-        newMaintainance.attachment = attachment;
-        newMaintainance.attachmentIds = attachmentIds;
+        newMaintainance.requestImages = attachment;
+        newMaintainance.requestImagePublicIds = attachmentIds;
       }
 
       const maintenance = new HavenMaintenance(newMaintainance);
