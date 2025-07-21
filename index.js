@@ -96,7 +96,7 @@ app.use("/", (req, res) => {
 
 io.on("connection", (socket) => {
   socketHandler(io, socket); // <- THIS is calling your socket module
-});
+}); 
 
 async function connectMongo() {
   console.log("Starting");

@@ -123,5 +123,42 @@ HavenMaintenanceRouter.patch(
     }
   }
 );
+HavenMaintenanceRouter.delete(
+  "/dashboard/delete-maintenance/:maintenanceId",
+  async (req, res) => {
+    try {
+      const { authorization } = req.headers;
+      const { maintenanceId } = req.params;
+      if (!authorization || authorization.length < 10) {
+        return res.status(400).json({ message: "Invalid token in header" });
+      }
+
+      const token = authorization.split("Bearer ")[1];
+      const userId = jwt.verify(token, process.env.JWTSECRET);
+
+      const maintenance = await HavenMaintenance.findOneAndDelete({
+        landlordId: userId.Id,
+        _id: maintenanceId,
+      });
+
+      if (!maintenance) {
+        return res.status(404).json({
+          message: "Maintenance with this Id not found",
+        });
+      }
+      res.status(200).json({ message: "Sucessful", maintenance });
+    } catch (error) {
+      console.log(error);
+      if (error.name == "TokenExpiredError") {
+        console.log("WWWWWWWWWWWWWWWWWWW");
+        return res.status(460).json({ message: "Token already used!" });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return res.status(461).json({ message: "invalid token!" });
+      }
+      res.status(500).json(error);
+    }
+  }
+);
 
 export default HavenMaintenanceRouter;
