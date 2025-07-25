@@ -21,7 +21,9 @@ HavenMaintenanceRouter.get(
       const token = authorization.split("Bearer ")[1];
       const userId = jwt.verify(token, process.env.JWTSECRET).Id;
 
-      const maintenance = await HavenMaintenance.find({ landlordId: userId });
+      const maintenance = await HavenMaintenance.find({
+        landlordId: userId,
+      }).sort({ createdAt: -1 });
 
       console.log("maintenance");
       console.log(maintenance);
