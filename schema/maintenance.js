@@ -46,6 +46,10 @@ const schema = new Schema(
       enum: ["low", "medium", "high"],
       default: "low",
     },
+    tenantId: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );
