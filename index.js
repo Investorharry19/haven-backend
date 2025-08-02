@@ -16,6 +16,8 @@ import LeaseRouter from "./routes/lease.js";
 import FlwWebhook from "./routes/flwWebhook.js";
 import HavenNotificationRouter from "./routes/notification.js";
 import HavenMaintenanceRouter from "./routes/maintenance.js";
+import HavenLeaseRouter from "./routes/lease.js";
+import AIExtractionRouter from "./routes/aiExtraction.js";
 
 // import
 
@@ -88,15 +90,13 @@ app.use("/", LeaseRouter);
 app.use("/", FlwWebhook);
 app.use("/", HavenNotificationRouter);
 app.use("/", HavenMaintenanceRouter);
-app.use("/", (req, res) => {
-  res
-    .status(200)
-    .json({ message: "Done", cookie: req.cookies["ibm-device-id"] });
-});
+app.use("/", HavenLeaseRouter);
+app.use("/", HavenLeaseRouter);
+app.use("/", AIExtractionRouter);
 
 io.on("connection", (socket) => {
   socketHandler(io, socket); // <- THIS is calling your socket module
-}); 
+});
 
 async function connectMongo() {
   console.log("Starting");

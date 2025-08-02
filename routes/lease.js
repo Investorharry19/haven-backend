@@ -2,11 +2,12 @@ import HavenLease, { UsedLeaseToken } from "../schema/lease.js";
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import HavenProperty from "../schema/property.js";
-import { sendLeaseFormEmail } from "../utils/sendEmail.js";
+import { sendLeaseFormEmail, sendMagicLink } from "../utils/sendEmail.js";
 import { v4 as uuidv4 } from "uuid";
 import upload from "../utils/multer.js";
 import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
+import { Resend } from "resend";
 
 const HavenLeaseRouter = Router();
 import HavenProperties from "../schema/property.js";
@@ -532,34 +533,33 @@ HavenLeaseRouter.delete(
   }
 );
 
-/**
- *
- * @swagger
- * /dashboard/get-lease:
- *   get:
- *     summary: Get all leases for the authenticated landlord
- *     tags: [Lease]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of leases for the landlord
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *
- *       400:
- *         description: Invalid token in header
- *       460:
- *         description: Token already used!
- *       461:
- *         description: Invalid token!
- *       500:
- *         description: Internal server error
- *
- *
- */
+const resend = new Resend(process.env.RESEND_API_KEY);
+const JWT_SECRET = process.env.JWTSECRET;
+
+HavenLeaseRouter.post("/tenant/login-mail", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    console.log("Sending magic link to:", email);
+
+    const lease = await HavenLease.findOne({ tenantEmailAddress: email });
+    if (!lease) {
+      return res.status(404).json({ message: "Invalid email address." });
+    }
+
+    // Generate token valid for 15 minutes
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "15m" });
+    const magicLink = `${process.env.FRONTENDURL}/tenant/magic-link-login?token=${token}`;
+
+    await sendMagicLink(email, magicLink, lease.tenantName);
+    console.log(magicLink);
+
+    return res.status(200).json({ message: "Magic link sent to email." });
+  } catch (error) {
+    console.error("Resend error:", error);
+    return res.status(500).json({ error: "Failed to send email." });
+  }
+});
 
 export default HavenLeaseRouter;
