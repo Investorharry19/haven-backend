@@ -18,6 +18,9 @@ import HavenNotificationRouter from "./routes/notification.js";
 import HavenMaintenanceRouter from "./routes/maintenance.js";
 import HavenLeaseRouter from "./routes/lease.js";
 import AIExtractionRouter from "./routes/aiExtraction.js";
+import SubscriptionRouter from "./routes/subscribe.js";
+import WebHooksRouter from "./routes/webhooks.js";
+import PerformanceRouter from "./routes/performance.js";
 
 // import
 
@@ -93,6 +96,9 @@ app.use("/", HavenMaintenanceRouter);
 app.use("/", HavenLeaseRouter);
 app.use("/", HavenLeaseRouter);
 app.use("/", AIExtractionRouter);
+app.use("/", SubscriptionRouter);
+app.use("/", WebHooksRouter);
+app.use("/", PerformanceRouter);
 
 io.on("connection", (socket) => {
   socketHandler(io, socket); // <- THIS is calling your socket module

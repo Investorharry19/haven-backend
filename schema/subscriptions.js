@@ -1,39 +1,27 @@
-import { Schema, model } from "mongoose";
+import mongoose from "mongoose";
 
-const schema = new Schema(
-  {
-    userId: {
-      type: String,
-      required: true,
-    },
-    customerEmail: {
-      type: String,
-      required: true,
-    },
-    planId: {
-      type: String,
-      required: true,
-    },
-    planName: {
-      type: String,
-      required: true,
-    },
-    planAmount: {
-      type: Number,
-      required: true,
-    },
-    planInterval: {
-      type: String,
-      required: true,
-    },
-    status: {
-      type: String,
-      enum: ["active", "inactive", "cancelled"],
-      default: "active",
-    },
+const SubscriptionSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "haven-users",
+    required: true,
   },
-  { timestamps: true }
-);
+  flwSubscriptionId: { type: String, index: true }, // Flutterwave subscription id
+  planId: String, // Flutterwave plan id
+  amount: Number,
+  currency: { type: String, default: "NGN" },
+  status: {
+    type: String,
+    enum: ["active", "inactive", "cancelled", "pending", "failed"],
+    default: "pending",
+  },
+  cardType: String,
+  lastFourDigits: Number,
+  nextBillingDate: String,
+  createdAt: { type: Date, default: Date.now },
+  metadata: mongoose.Schema.Types.Mixed,
+});
 
-const Subscription = model("Subscription", schema);
+const Subscription = mongoose.model("Subscription", SubscriptionSchema);
+
 export default Subscription;
