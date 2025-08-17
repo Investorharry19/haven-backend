@@ -4,6 +4,7 @@ import upload from "../utils/multer.js";
 import FormData from "form-data";
 import axios from "axios";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 
 const AIExtractionRouter = Router();
 
