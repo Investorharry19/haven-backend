@@ -8,10 +8,14 @@ import upload from "../utils/multer.js";
 import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
 import { Resend } from "resend";
-
-const HavenLeaseRouter = Router();
 import HavenProperties from "../schema/property.js";
 import sendNotification from "../utils/sendNotification.js";
+import UserSchema from "../schema/user.js";
+import { profile } from "console";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const JWT_SECRET = process.env.JWTSECRET;
+const HavenLeaseRouter = Router();
 
 /**
  * @swagger
@@ -533,9 +537,6 @@ HavenLeaseRouter.delete(
   }
 );
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const JWT_SECRET = process.env.JWTSECRET;
-
 HavenLeaseRouter.post("/tenant/login-mail", async (req, res) => {
   try {
     const { email } = req.body;
@@ -559,6 +560,84 @@ HavenLeaseRouter.post("/tenant/login-mail", async (req, res) => {
   } catch (error) {
     console.error("Resend error:", error);
     return res.status(500).json({ error: "Failed to send email." });
+  }
+});
+
+HavenLeaseRouter.post("/tenant/verify-magic-link", async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: "Token is required" });
+
+    // Verify the token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const lease = await HavenLease.findOne({
+      tenantEmailAddress: decoded.email,
+    });
+
+    if (!lease) {
+      return res.status(404).json({ message: "Invalid token or email." });
+    }
+
+    // Generate a new JWT for the session
+    const sessionToken = jwt.sign(
+      { Id: lease._id, email: lease.tenantEmailAddress },
+      JWT_SECRET,
+      { expiresIn: "5d" }
+    );
+
+    return res.status(200).json({ token: sessionToken });
+  } catch (error) {
+    console.error("Verification error:", error);
+    return res.status(500).json({ error: "Failed to verify magic link." });
+  }
+});
+
+HavenLeaseRouter.get("/tenant/get-my-lease-info", async (req, res) => {
+  try {
+    const authorization = req.headers["x-api-key"];
+
+    console.log(authorization);
+    if (!authorization || authorization.length < 10) {
+      return res.status(400).json({ message: "Invalid token in header" });
+    }
+
+    const { email: tenantEmailAddress } = jwt.verify(
+      authorization,
+      process.env.JWTSECRET
+    );
+    console.log(tenantEmailAddress);
+    const lease = await HavenLease.findOne({ tenantEmailAddress });
+
+    if (!lease) {
+      return res.status(404).json({
+        message: "lease Info not found",
+      });
+    }
+    const landlord = await UserSchema.findById(lease.landlordId);
+    const property = await HavenProperty.findOne({ userId: landlord._id });
+
+    res.status(200).json({
+      ...lease._doc,
+      landlord: {
+        ...landlord._doc,
+        password: "",
+        subscription: "",
+        profile: {
+          ...landlord._doc.personal,
+          profileUrl: landlord.personal.avatarUrl,
+        },
+      },
+      property: {
+        propertyName: property.propertyName,
+        propertyLocation: property.propertyLocation,
+        propertyType: property.propertyType,
+        country: property.country,
+        propertyImagesUrl: property.propertyImagesUrl,
+      },
+    });
+  } catch (error) {
+    console.error("Verification error:", error);
+    return res.status(500).json({ error: "Failed to verify magic link." });
   }
 });
 

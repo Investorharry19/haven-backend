@@ -24,6 +24,7 @@ const schema = new Schema(
     },
     subscription: {
       type: String,
+      enum: ["free", "pro"],
       default: "free",
     },
 

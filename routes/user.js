@@ -11,6 +11,7 @@ import axios from "axios";
 import upload from "../utils/multer.js";
 import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
+import Subscription from "../schema/subscriptions.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const UserRouter = Router();
@@ -220,12 +221,14 @@ UserRouter.get("/auth/current-user", async (req, res) => {
         message: "user not found",
       });
     }
+    const subscriptionData = await Subscription.findOne({ user: user._id });
     res.status(200).json({
       ...user._doc,
       Token: userId.Id,
       Id: userId.Id,
       password: "",
       BusinessId: user?.businessId,
+      subscriptionData,
     });
   } catch (error) {
     res.status(500).json({ error });
