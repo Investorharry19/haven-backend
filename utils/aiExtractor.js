@@ -31,12 +31,12 @@ const upload = multer({ storage: storage });
 class HavenLease {
   constructor(data) {
     this.landlordId = data.landlordId || "N/A";
-    this.propertyId = data.propertyId || "N/A";
+    this.propertyId = "";
     this.tenantName = data.tenantName || "N/A";
     this.tenantEmailAddress = data.tenantEmailAddress || "";
     this.tenantUnit = data.tenantUnit || "N/A";
     this.tenantGender = data.tenantGender || "Unknown";
-    this.tenantPhoneNumber = data.tenantPhoneNumber || "N/A";
+    this.tenantPhoneNumber = data.tenantPhoneNumber || "";
     this.leaseFee = parseFloat(data.leaseFee) || 0.0;
     this.leaseCycle = data.leaseCycle || "custom";
     this.startsFrom = data.startsFrom || "1970-01-01";
@@ -64,7 +64,7 @@ export class LLMLeaseExtractor {
       - If the duration is divisible by 7 (e.g., 7, 14, 28 days), it may indicate a weekly pattern
       - If the duration is approximately 30-31 days, it likely indicates a monthly cycle
       - If the duration is approximately 365 days, it indicates a yearly cycle
-      - Categorize ONLY as "weekly" (7 days), "bi-weekly" (14 days), "monthly" (28-31 days), "yearly" (365 days)
+      - Categorize ONLY as "weekly" (7 days), "bi-weekly" (14 days), "monthly" (28-31 days), "annually " (365 days)
       - Use "custom" ONLY if it doesn't match any of these standard patterns
       
       GENDER IDENTIFICATION:
