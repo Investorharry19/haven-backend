@@ -6,6 +6,7 @@ import UserSchema from "../schema/user.js";
 import jwt from "jsonwebtoken";
 
 const PerformanceRouter = Router();
+
 // helper: get monthly counts for a model
 function getMonthlyCounts(key, model, userId, startDate) {
   const pipeline = [];
@@ -58,48 +59,45 @@ PerformanceRouter.get("/performance/dashboard-data", async (req, res) => {
     const userId = jwt.verify(token, process.env.JWTSECRET).Id;
 
     const user = await UserSchema.findById(userId);
-    const startDate = user.createdAt;
+
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const startDate = new Date(currentYear, 0, 1); // 👈 always Jan of this year
 
     const [leases, maintenance, properties] = await Promise.all([
       getMonthlyCounts("notUserId", HavenLease, userId, startDate),
       getMonthlyCounts("notUserId", HavenMaintenance, userId, startDate),
-      getMonthlyCounts("issUserId", HavenProperties, userId, startDate),
+      getMonthlyCounts("isUserId", HavenProperties, userId, startDate),
     ]);
 
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // 1-based month
     const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
       "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
 
     const months = [];
-    let year = 2025;
-    let month = 8; // August
 
-    while (
-      year < currentYear ||
-      (year === currentYear && month <= currentMonth)
-    ) {
+    // 👇 loop through ALL 12 months regardless of current date
+    for (let month = 1; month <= 12; month++) {
       const propertyTotal =
-        properties.find((p) => p.year === year && p.month === month)?.total ||
-        0;
+        properties.find((p) => p.year === currentYear && p.month === month)
+          ?.total || 0;
       const leaseTotal =
-        leases.find((l) => l.year === year && l.month === month)?.total || 0;
+        leases.find((l) => l.year === currentYear && l.month === month)
+          ?.total || 0;
       const maintenanceTotal =
-        maintenance.find((m) => m.year === year && m.month === month)?.total ||
-        0;
+        maintenance.find((m) => m.year === currentYear && m.month === month)
+          ?.total || 0;
 
       const prev =
         months.length > 0
@@ -118,7 +116,7 @@ PerformanceRouter.get("/performance/dashboard-data", async (req, res) => {
       const maintenanceChange = calcChange(maintenanceTotal, prev.maintenance);
 
       months.push({
-        year,
+        year: currentYear,
         month: monthNames[month - 1],
         properties: propertyTotal,
         leases: leaseTotal,
@@ -127,13 +125,6 @@ PerformanceRouter.get("/performance/dashboard-data", async (req, res) => {
         leaseChange: Number(leaseChange.toFixed(2)),
         maintenanceChange: Number(maintenanceChange.toFixed(2)),
       });
-
-      if (month === 12) {
-        year++;
-        month = 1;
-      } else {
-        month++;
-      }
     }
 
     res.json(months);
