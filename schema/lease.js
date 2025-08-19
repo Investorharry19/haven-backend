@@ -53,7 +53,7 @@ const schema = new Schema(
     },
     avatar: {
       type: String,
-      required: true,
+      required: false,
     },
     avatarPublidId: {
       type: String,
