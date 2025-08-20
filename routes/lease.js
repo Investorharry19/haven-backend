@@ -387,7 +387,7 @@ HavenLeaseRouter.get("/dashboard/get-lease", async (req, res) => {
 
 HavenLeaseRouter.patch(
   "/dashboard/edit-lease/:leaseId",
-  upload.fields([{ name: "images" }]),
+  upload.fields([{ name: "avatar" }]),
   async (req, res) => {
     try {
       const { authorization } = req.headers;
@@ -401,14 +401,14 @@ HavenLeaseRouter.patch(
 
       const newLease = req.body;
 
-      if (req.files && req.files.images) {
+      if (req.files && req.files.avatar) {
         const oldLease = await HavenLease.findOne({
-          userId: userId.Id,
+          landlordId: userId.Id,
           _id: leaseId,
         });
 
         await Promise.all(
-          req.files.images.map(async (image) => {
+          req.files.avatar.map(async (image) => {
             const uploadPromise = promisify(cloud.uploader.upload);
             const result = await uploadPromise(image.path);
             newLease.avatar = result.secure_url;
