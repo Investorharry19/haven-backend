@@ -10,8 +10,6 @@ HavenNotificationRouter.post("/test-notification", async (req, res) => {
   const { type, payload } = req.body;
 
   try {
-    console.log("Calling sendNotification...");
-
     // ✅ Call properly
     await sendNotification({ userId, type, payload }, io);
 

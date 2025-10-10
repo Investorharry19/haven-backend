@@ -36,7 +36,6 @@ MessageRouter.post("/message/send/text-message", async (req, res) => {
 
     return res.status(200).json(newMessage);
   } catch (error) {
-    console.log(error);
     return res.status(500).json(error);
   }
 });
@@ -48,7 +47,6 @@ MessageRouter.post(
     try {
       const data = req.body;
       const user = await UserSchema.findOne({ username: data.ownerUsername });
-      console.log(data.ownerUsername);
       if (!user) {
         return res.status(404).json({ message: "No user with this username" });
       }
@@ -64,7 +62,6 @@ MessageRouter.post(
           .audioFilters(filters)
           .format("mp3")
           .on("error", (err) => {
-            console.error("FFmpeg error:", err);
             reject(new Error("Error processing audio with FFmpeg"));
           });
 
@@ -72,7 +69,6 @@ MessageRouter.post(
           { resource_type: "video" }, // or "auto" or "audio"
           (error, result) => {
             if (error) {
-              console.error("Cloudinary upload error:", error);
               reject(new Error("Error uploading to Cloudinary"));
             } else {
               resolve(result);
@@ -106,7 +102,6 @@ MessageRouter.post(
         .status(200)
         .json({ cloudinaryUrl: cloudinaryResult.secure_url });
     } catch (error) {
-      console.error("Unhandled error:", error);
       return res
         .status(500)
         .json({ message: error.message || "Internal Server Error" });
@@ -132,11 +127,9 @@ MessageRouter.post(
         .audioCodec("libmp3lame")
         .format("mp3")
         .on("error", (err) => {
-          console.error("FFmpeg error:", err);
           new Error("Error processing audio with FFmpeg");
         })
         .on("end", () => {
-          console.log("FFmpeg processing finished.");
           // Once processing is finished, you can finalize the response here.
           res.end(); // End the response after FFmpeg completes the stream
         })
@@ -150,7 +143,6 @@ MessageRouter.post(
         'attachment; filename="processed.mp3"'
       );
     } catch (error) {
-      console.error("Unhandled error:", error);
       return res
         .status(500)
         .json({ message: error.message || "Internal Server Error" });
@@ -174,12 +166,10 @@ MessageRouter.get("/message/get-messages/:username", async (req, res) => {
 
     const username = req.params.username;
     const user = await UserSchema.findOne({ username });
-    console.log(user);
 
     if (!user) {
       return res.status(404).json({ message: "No user with this username" });
     }
-    console.log(verifiedToken);
     if (verifiedToken.Id !== user._id.toString()) {
       return res.status(400).json({
         message: "You can only view your own messages",
@@ -193,8 +183,6 @@ MessageRouter.get("/message/get-messages/:username", async (req, res) => {
       isStarred: false,
     });
 
-    console.log(deletedMessages);
-
     const messages = await MessagesSchema.find({
       ownerUsername: username,
     }).sort({ createdAt: -1 });
@@ -203,7 +191,6 @@ MessageRouter.get("/message/get-messages/:username", async (req, res) => {
       .status(200)
       .json({ messages, deleteCount: deletedMessages.deletedCount });
   } catch (error) {
-    console.log(error);
     return res.status(500).json(error);
   }
 });
@@ -244,7 +231,6 @@ MessageRouter.patch("/message/mark-message-as-read/:id", async (req, res) => {
 
     return res.status(200).json(message);
   } catch (error) {
-    console.log(error);
     return res.status(500).json(error);
   }
 });
@@ -288,7 +274,6 @@ MessageRouter.patch("/message/star-message/:id", async (req, res) => {
 
     return res.status(200).json(message);
   } catch (error) {
-    console.log(error);
     return res.status(500).json(error);
   }
 });
@@ -314,12 +299,10 @@ MessageRouter.delete("/message/delete-message/:id", async (req, res) => {
     if (!message) {
       return res.status(404).json({ message: "No message with this id" });
     }
-    console.log(message, 168);
     const user = await UserSchema.findOne({
       username: message.ownerUsername,
     });
 
-    console.log(user, 174);
     if (verifiedToken.Id !== user._id.toString()) {
       return res.status(400).json({
         message: "You can only delete your own messages",
@@ -330,7 +313,6 @@ MessageRouter.delete("/message/delete-message/:id", async (req, res) => {
 
     return res.status(200).json({ deleted: true });
   } catch (error) {
-    console.log(error);
     return res.status(500).json(error);
   }
 });
@@ -370,52 +352,9 @@ MessageRouter.delete(
 
       return res.status(200).json({ deleted: true });
     } catch (error) {
-      console.log(error);
       return res.status(500).json(error);
     }
   }
 );
 
-// MessageRouter.post("/message/process/create-video-stream", async (req, res) => {
-//   try {
-//     const passthroughStream = new PassThrough();
-//     Ffmpeg()
-//       // .addInput("video.jpg")
-//       .addInput(req.body.audioUrl)
-//       .inputFormat("mp3")
-//       .outputOptions([
-//         "-c:v libx264",
-//         "-tune stillimage",
-//         "-c:a aac",
-//         "-b:a 192k",
-//         "-pix_fmt yuv420p",
-//         "-shortest",
-//       ])
-//       .format("mp4")
-//       .on("error", (err) => {
-//         console.error("FFmpeg error:", err);
-//         new Error("Error processing audio with FFmpeg");
-//       })
-//       .on("end", () => {
-//         console.log("FFmpeg processing finished.");
-//         // Once processing is finished, you can finalize the response here.
-//         res.end(); // End the response after FFmpeg completes the stream
-//       })
-//       .pipe(passthroughStream);
-
-//     console.log("Dnoe");
-//     passthroughStream.pipe(res);
-
-//     res.setHeader("Content-Type", "video/mp4");
-//     res.setHeader(
-//       "Content-Disposition",
-//       'attachment; filename="processed.mp4"'
-//     );
-//   } catch (error) {
-//     console.error("Unhandled error:", error);
-//     return res
-//       .status(500)
-//       .json({ message: error.message || "Internal Server Error" });
-//   }
-// });
 export default MessageRouter;

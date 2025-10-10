@@ -21,6 +21,7 @@ import AIExtractionRouter from "./routes/aiExtraction.js";
 import SubscriptionRouter from "./routes/subscribe.js";
 import WebHooksRouter from "./routes/webhooks.js";
 import PerformanceRouter from "./routes/performance.js";
+import UpdatesRouter from "./routes/updates.js";
 
 // import
 
@@ -99,6 +100,7 @@ app.use("/", AIExtractionRouter);
 app.use("/", SubscriptionRouter);
 app.use("/", WebHooksRouter);
 app.use("/", PerformanceRouter);
+app.use("/", UpdatesRouter);
 
 io.on("connection", (socket) => {
   socketHandler(io, socket); // <- THIS is calling your socket module

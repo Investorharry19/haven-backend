@@ -21,7 +21,6 @@ AIExtractionRouter.post(
       // }
       // const token = authorization.split("Bearer ")[1];
       // const userId = jwt.verify(token, process.env.JWTSECRET).Id;
-      console.log("req.file", req.files.document[0]);
       if (!req.files || !req.files.document[0].path.endsWith(".pdf")) {
         return res
           .status(400)

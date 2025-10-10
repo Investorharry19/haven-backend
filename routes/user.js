@@ -27,7 +27,6 @@ const comparePassword = async (savedPassword, enteredPassword) => {
 };
 
 UserRouter.post("/auth/register", async (req, res) => {
-  console.log("register");
   try {
     const passwordHash = await hashPassword(req.body.password);
     const result = new UserSchema({
@@ -37,7 +36,6 @@ UserRouter.post("/auth/register", async (req, res) => {
         fullName: req.body.fullName,
       },
     });
-    console.log(result);
     await result.save();
 
     const emailConfirmationToken = jwt.sign(
@@ -51,7 +49,6 @@ UserRouter.post("/auth/register", async (req, res) => {
         expiresIn: "10m",
       }
     );
-    console.log(req.body.email);
 
     sendAccountActivationMail(
       result.email,
@@ -62,21 +59,11 @@ UserRouter.post("/auth/register", async (req, res) => {
         "&email=" +
         result.email
     );
-    console.log(
-      process.env.FRONTENDURL +
-        "/auth/verify-email?token=" +
-        emailConfirmationToken +
-        "&email=" +
-        result.email
-    );
     res.status(200).json(result);
   } catch (error) {
-    console.log("ERROR");
-    console.log(error);
     if (error.errorResponse?.code == 11000 && error.keyPattern.email) {
       return res.status(460).json({ ...error, status: 460 });
     }
-    console.log(error);
     res.status(500).json({ error });
   }
 });
@@ -87,7 +74,6 @@ UserRouter.post("/auth/verify-email", async (req, res) => {
     const vefified = jwt.verify(token, process.env.JWTSECRET);
     const { Id } = vefified;
     const user = await UserSchema.findOne({ _id: Id });
-    console.log(user);
     user.emailVerified = true;
     user.version = user.version + 1;
     await user.save();
@@ -97,7 +83,6 @@ UserRouter.post("/auth/verify-email", async (req, res) => {
     if (error.name == "JsonWebTokenError") {
       return res.status(460).json({ error: "Invalid or expired token" });
     }
-    console.log(error);
     res.status(500).json(error);
   }
 });
@@ -105,10 +90,7 @@ UserRouter.post("/auth/verify-email", async (req, res) => {
 UserRouter.post("/auth/resend-email-verification-token", async (req, res) => {
   try {
     const email = req.body.email;
-
     const result = await UserSchema.findOne({ email });
-    console.log(result);
-
     if (!result) {
       return res.status(404).json({ message: "No user with this email" });
     }
@@ -134,17 +116,8 @@ UserRouter.post("/auth/resend-email-verification-token", async (req, res) => {
         result.email
     );
 
-    console.log(
-      process.env.FRONTENDURL +
-        "/auth/verify-email?token=" +
-        emailConfirmationToken +
-        "&email=" +
-        result.email
-    );
-
     res.status(200).json({ message: "Done" });
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error });
   }
 });
@@ -199,7 +172,6 @@ UserRouter.post("/auth/login", async (req, res) => {
     };
     res.status(200).json(sendUser);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error });
   }
 });
@@ -254,7 +226,6 @@ UserRouter.post("/auth/forgot-password", async (req, res) => {
       user.personal.fullName,
       process.env.FRONTENDURL + "/auth/create-new-password?token=" + token
     );
-    console.log("SENT");
     res.status(200).json({ message: "Sent to " + email });
   } catch (error) {
     res.status(500).json(error);
@@ -283,9 +254,7 @@ UserRouter.post("/auth/reset-password", async (req, res) => {
     // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
     res.status(200).json({ message: "password reset sucessful" });
   } catch (error) {
-    console.log(error);
     if (error.name == "TokenExpiredError") {
-      console.log("WWWWWWWWWWWWWWWWWWW");
       return res.status(460).json({ message: "Token already used!" });
     }
     if (error.name === "JsonWebTokenError") {
@@ -308,7 +277,6 @@ UserRouter.post("/account/google-auth", async (req, res) => {
       }
     );
 
-    console.log(response.data);
     const userExists = await UserSchema.findOne({ email: response.data.email });
     if (userExists) {
       const token = jwt.sign({ id: userExists._id }, process.env.JWTSECRET, {
@@ -339,7 +307,6 @@ UserRouter.post("/account/google-auth", async (req, res) => {
         .json({ user: newUser, token, message: "new user registered" });
     }
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error });
   }
 });
@@ -377,13 +344,9 @@ UserRouter.patch(
         });
       }
 
-      // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
-      console.log(user);
       res.status(200).json({ message: "User edit sucessful" });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -446,9 +409,7 @@ UserRouter.patch(
       // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
       res.status(200).json({ message: "User edit sucessful" });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -492,9 +453,7 @@ UserRouter.patch(
 
       res.status(200).json({ message: "Company info edit sucessful", user });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -534,9 +493,7 @@ UserRouter.patch("/auth/edit-user-security", async (req, res) => {
     res.status(200).json({ message: "Password updated successfully" });
     return;
   } catch (error) {
-    console.log(error);
     if (error.name == "TokenExpiredError") {
-      console.log("WWWWWWWWWWWWWWWWWWW");
       return res.status(460).json({ message: "Token already used!" });
     }
     if (error.name === "JsonWebTokenError") {

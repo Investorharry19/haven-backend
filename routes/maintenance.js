@@ -25,9 +25,6 @@ HavenMaintenanceRouter.get(
       const maintenance = await HavenMaintenance.find({
         landlordId: userId,
       }).sort({ createdAt: -1 });
-
-      console.log("maintenance");
-      console.log(maintenance);
       res.status(200).json(maintenance);
     } catch (error) {
       console.error("Error creating lease:", error);
@@ -82,7 +79,6 @@ HavenMaintenanceRouter.post(
       await maintenance.save();
       res.status(200).json({ message: "Sucessful", maintenance });
     } catch (error) {
-      console.log(error);
       res.status(500).json(error);
     }
   }
@@ -114,9 +110,7 @@ HavenMaintenanceRouter.patch(
       }
       res.status(200).json({ message: "Sucessful", maintenance });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -151,9 +145,7 @@ HavenMaintenanceRouter.delete(
       }
       res.status(200).json({ message: "Sucessful", maintenance });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -171,8 +163,6 @@ HavenMaintenanceRouter.get(
   async (req, res) => {
     try {
       const authorization = req.headers["x-api-key"];
-
-      console.log(authorization);
       if (!authorization || authorization.length < 10) {
         return res.status(400).json({ message: "Invalid token in header" });
       }
@@ -181,7 +171,6 @@ HavenMaintenanceRouter.get(
         authorization,
         process.env.JWTSECRET
       );
-      console.log(tenantEmailAddress);
       const lease = await HavenLease.findOne({ tenantEmailAddress });
 
       if (!lease) {
@@ -207,8 +196,6 @@ HavenMaintenanceRouter.post(
   async (req, res) => {
     try {
       const authorization = req.headers["x-api-key"];
-
-      console.log(authorization);
       if (!authorization || authorization.length < 10) {
         return res.status(400).json({ message: "Invalid token in header" });
       }
@@ -217,7 +204,6 @@ HavenMaintenanceRouter.post(
         authorization,
         process.env.JWTSECRET
       );
-      console.log(tenantEmailAddress);
       const lease = await HavenLease.findOne({ tenantEmailAddress });
 
       if (!lease) {
@@ -225,9 +211,6 @@ HavenMaintenanceRouter.post(
           message: "lease Info not found",
         });
       }
-
-      console.log(lease);
-
       const newMaintainance = req.body;
 
       if (req.files && req.files.attachments) {
@@ -251,7 +234,6 @@ HavenMaintenanceRouter.post(
       newMaintainance.landlordId = lease.landlordId;
       newMaintainance.affectedUnit = lease.tenantUnit;
 
-      console.log(252, newMaintainance);
       const maintenance = new HavenMaintenance(newMaintainance);
       const data = {
         title: "New Maintenance request ",
@@ -274,7 +256,6 @@ HavenMaintenanceRouter.post(
       await maintenance.save();
       res.status(200).json({ message: "Sucessful", maintenance });
     } catch (error) {
-      console.log(error);
       res.status(500).json(error);
     }
   }
@@ -287,7 +268,6 @@ HavenMaintenanceRouter.delete(
       const { maintenanceId } = req.params;
       const authorization = req.headers["x-api-key"];
 
-      console.log(authorization);
       if (!authorization || authorization.length < 10) {
         return res.status(400).json({ message: "Invalid token in header" });
       }
@@ -296,7 +276,6 @@ HavenMaintenanceRouter.delete(
         authorization,
         process.env.JWTSECRET
       );
-      console.log(tenantEmailAddress);
       const lease = await HavenLease.findOne({ tenantEmailAddress });
 
       if (!lease) {

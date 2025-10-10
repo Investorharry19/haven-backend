@@ -216,13 +216,10 @@ HavenLeaseRouter.post(
   async (req, res) => {
     try {
       const { token } = req.body;
-      // console.log("Token received:", token);
-      console.log(typeof token);
       const payload = jwt.verify(token, process.env.JWTSECRET);
       const usedToken = await UsedLeaseToken.findOne({
         jti: payload.usedLeaseToken.jti,
       });
-      console.log("Used token:", usedToken);
 
       if (usedToken && usedToken.used) {
         return res.status(400).json({ message: "Token already used!" });
@@ -236,7 +233,6 @@ HavenLeaseRouter.post(
         propertyId: payload.propertyId,
       });
 
-      console.log("New lease data:", newLease);
       let imageUrl = "";
       let imageId = "";
       await Promise.all(
@@ -247,7 +243,6 @@ HavenLeaseRouter.post(
           imageId = result.public_id;
         })
       );
-      console.log(payload);
 
       await UsedLeaseToken.updateOne(
         { jti: payload.usedLeaseToken.jti },
@@ -373,9 +368,7 @@ HavenLeaseRouter.get("/dashboard/get-lease", async (req, res) => {
 
     res.status(200).json(leases);
   } catch (error) {
-    console.log(error);
     if (error.name == "TokenExpiredError") {
-      console.log("WWWWWWWWWWWWWWWWWWW");
       return res.status(460).json({ message: "Token already used!" });
     }
     if (error.name === "JsonWebTokenError") {
@@ -434,9 +427,7 @@ HavenLeaseRouter.patch(
       }
       res.status(200).json({ message: "Lease edit sucessful", property });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -477,9 +468,7 @@ HavenLeaseRouter.patch(
       );
       res.status(200).json({ message: "Lease edit sucessful", lease });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -524,9 +513,7 @@ HavenLeaseRouter.delete(
 
       res.status(200).json({ message: "Lease Delete sucessful" });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -542,8 +529,6 @@ HavenLeaseRouter.post("/tenant/login-mail", async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email is required" });
 
-    console.log("Sending magic link to:", email);
-
     const lease = await HavenLease.findOne({ tenantEmailAddress: email });
     if (!lease) {
       return res.status(404).json({ message: "Invalid email address." });
@@ -554,7 +539,6 @@ HavenLeaseRouter.post("/tenant/login-mail", async (req, res) => {
     const magicLink = `${process.env.FRONTENDURL}/tenant/magic-link-login?token=${token}`;
 
     await sendMagicLink(email, magicLink, lease.tenantName);
-    console.log(magicLink);
 
     return res.status(200).json({ message: "Magic link sent to email." });
   } catch (error) {
@@ -580,7 +564,11 @@ HavenLeaseRouter.post("/tenant/verify-magic-link", async (req, res) => {
 
     // Generate a new JWT for the session
     const sessionToken = jwt.sign(
-      { Id: lease._id, email: lease.tenantEmailAddress },
+      {
+        Id: lease._id,
+        email: lease.tenantEmailAddress,
+        propertyId: lease.propertyId,
+      },
       JWT_SECRET,
       { expiresIn: "5d" }
     );
@@ -596,7 +584,6 @@ HavenLeaseRouter.get("/tenant/get-my-lease-info", async (req, res) => {
   try {
     const authorization = req.headers["x-api-key"];
 
-    console.log(authorization);
     if (!authorization || authorization.length < 10) {
       return res.status(400).json({ message: "Invalid token in header" });
     }
@@ -605,7 +592,6 @@ HavenLeaseRouter.get("/tenant/get-my-lease-info", async (req, res) => {
       authorization,
       process.env.JWTSECRET
     );
-    console.log(tenantEmailAddress);
     const lease = await HavenLease.findOne({ tenantEmailAddress });
 
     if (!lease) {

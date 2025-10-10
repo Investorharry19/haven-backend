@@ -1,9 +1,11 @@
 // utils/socket.js
 import jwt from "jsonwebtoken";
 import Notification from "../schema/notification.js"; // make sure this path is correct
+import UpdateSchema from "../schema/updates.js";
 
 export default async function socketHandler(io, socket) {
   const token = socket.handshake.auth?.token;
+  const role = socket.handshake.auth?.role;
 
   try {
     const user = jwt.verify(token, process.env.JWTSECRET);
@@ -17,16 +19,31 @@ export default async function socketHandler(io, socket) {
   console.log(socket.user);
   console.log("User connected via socket:", socket.user.Id);
 
-  socket.join(socket.user.Id);
+  if (role === "landlord") {
+    socket.join(socket.user.Id);
+    try {
+      const notifications = await Notification.find({
+        userId: socket.user.Id,
+      }).sort({ createdAt: -1 });
 
-  try {
-    const notifications = await Notification.find({
-      userId: socket.user.Id,
-    }).sort({ createdAt: -1 });
+      socket.emit("notifications:init", notifications);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  }
 
-    socket.emit("notifications:init", notifications);
-  } catch (err) {
-    console.error("Failed to fetch notifications:", err);
+  if (role === "tenant") {
+    socket.join(`_${socket.user.propertyId}_`);
+    try {
+      console.log(socket.user.propertyId);
+      const updates = await UpdateSchema.find({
+        propertyId: socket.user.propertyId,
+      });
+
+      socket.emit("landlord_update:init", updates);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
   }
 
   socket.on("notifications:read", async (ids) => {

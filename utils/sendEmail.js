@@ -73,7 +73,6 @@ export const sendPasswordResetEmail = async (email, username, link) => {
   if (error) {
     throw new Error("Email not sent");
   }
-  console.log(link);
 };
 
 export const sendAccountActivationMail = async (email, username, link) => {

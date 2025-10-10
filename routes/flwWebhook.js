@@ -15,7 +15,6 @@ FlwWebhook.post("/flw-webhook", async (req, res) => {
       return res.status(401).end();
     }
     const payload = req.body;
-    console.log(payload);
 
     // Send email to amehharrison202017
     try {
@@ -30,8 +29,7 @@ FlwWebhook.post("/flw-webhook", async (req, res) => {
 
     res.status(200).end();
   } catch (err) {
-    console.log(err.code);
-    console.log(err.response?.body);
+    res.status(500).json(err);
   }
 });
 

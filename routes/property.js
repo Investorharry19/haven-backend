@@ -24,9 +24,7 @@ PropertiesRouter.get("/dashboard/get-property", async (req, res) => {
 
     res.status(200).json(properties);
   } catch (error) {
-    console.log(error);
     if (error.name == "TokenExpiredError") {
-      console.log("WWWWWWWWWWWWWWWWWWW");
       return res.status(460).json({ message: "Token already used!" });
     }
     if (error.name === "JsonWebTokenError") {
@@ -99,9 +97,7 @@ PropertiesRouter.post(
 
       res.status(200).json(newProperty);
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -162,9 +158,7 @@ PropertiesRouter.patch(
       }
       res.status(200).json({ message: "Property edit sucessful", property });
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
@@ -221,9 +215,7 @@ PropertiesRouter.delete(
 
       // de
     } catch (error) {
-      console.log(error);
       if (error.name == "TokenExpiredError") {
-        console.log("WWWWWWWWWWWWWWWWWWW");
         return res.status(460).json({ message: "Token already used!" });
       }
       if (error.name === "JsonWebTokenError") {
