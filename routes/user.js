@@ -12,6 +12,8 @@ import upload from "../utils/multer.js";
 import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
 import Subscription from "../schema/subscriptions.js";
+import { SendResponse } from "../utils/sendResponse.js";
+import { CurrentUser, LoginUser } from "../controllers/users.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const UserRouter = Router();
@@ -122,90 +124,9 @@ UserRouter.post("/auth/resend-email-verification-token", async (req, res) => {
   }
 });
 
-UserRouter.post("/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await UserSchema.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "Invalid email or password" });
-    }
+UserRouter.post("/auth/login", LoginUser);
 
-    const passwordMatch = await comparePassword(user.passwordHash, password);
-    if (!passwordMatch) {
-      return res.status(404).json({ message: "Invalid email or password" });
-    }
-    if (user.emailVerified === false) {
-      const emailConfirmationToken = jwt.sign(
-        {
-          version: 0,
-          role: "emailConfirmation",
-          Id: result._id,
-        },
-        process.env.JWTSECRET,
-        {
-          expiresIn: "10m",
-        }
-      );
-      sendAccountActivationMail(
-        user.email,
-        user.email,
-        process.env.FRONTENDURL +
-          "/auth/verify-email?token=" +
-          emailConfirmationToken +
-          "&email=" +
-          user.email
-      );
-
-      return res.status(461).json({ message: "Email not verified" });
-    }
-
-    const token = jwt.sign({ Id: user._id }, process.env.JWTSECRET, {
-      expiresIn: "30d",
-    });
-
-    const sendUser = {
-      ...user._docs,
-      Id: user._id.toString(),
-      token,
-      password: "",
-      version: 0,
-    };
-    res.status(200).json(sendUser);
-  } catch (error) {
-    res.status(500).json({ error });
-  }
-});
-
-UserRouter.get("/auth/current-user", async (req, res) => {
-  try {
-    const { authorization } = req.headers;
-
-    if (!authorization || authorization.length < 10) {
-      return res.status(400).json({ message: "Invalid token in header" });
-    }
-
-    const token = authorization.split("Bearer ")[1];
-    const userId = jwt.verify(token, process.env.JWTSECRET);
-    const user = await UserSchema.findOne({ _id: userId.Id });
-
-    if (!user) {
-      return res.status(404).json({
-        message: "user not found",
-      });
-    }
-    const subscriptionData = await Subscription.findOne({ user: user._id });
-    res.status(200).json({
-      ...user._doc,
-      Token: userId.Id,
-      Id: userId.Id,
-      password: "",
-      BusinessId: user?.businessId,
-      subscriptionData,
-    });
-  } catch (error) {
-    res.status(500).json({ error });
-  }
-});
+UserRouter.get("/auth/current-user", CurrentUser);
 
 UserRouter.post("/auth/forgot-password", async (req, res) => {
   try {

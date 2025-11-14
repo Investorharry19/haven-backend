@@ -8,7 +8,6 @@ import http from "http";
 
 import UserRouter from "./routes/user.js";
 import PropertiesRouter from "./routes/property.js";
-import MessageRouter from "./routes/messages.js";
 import socketHandler from "./utils/socketHandlers.js";
 import swaggerJsdoc from "swagger-jsdoc";
 import * as swaggerUi from "swagger-ui-express";
@@ -55,7 +54,11 @@ const swaggerSpec = swaggerJsdoc(options);
 
 dotenv.config();
 const corsOptions = {
-  origin: ["http://localhost:3000", "https://haven-backend.onrender.com"],
+  origin: [
+    "http://localhost:3000",
+    "https://haven-backend.onrender.com",
+    process.env.FRONTENDURL,
+  ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true,
 };
@@ -89,7 +92,6 @@ app.set("io", io);
 
 app.use("/", UserRouter);
 app.use("/", PropertiesRouter);
-app.use("/", MessageRouter);
 app.use("/", LeaseRouter);
 app.use("/", FlwWebhook);
 app.use("/", HavenNotificationRouter);
