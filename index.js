@@ -57,7 +57,7 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",
     "https://haven-backend.onrender.com",
-    process.env.FRONTENDURL,
+    "https://haven-frontend-topaz.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true,
