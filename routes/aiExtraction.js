@@ -6,21 +6,16 @@ import axios from "axios";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import { LLMLeaseExtractor, extractTextFromPDF } from "../utils/aiExtractor.js";
+import { authMiddleware } from "../utils/authMiddleware.js";
 
 const AIExtractionRouter = Router();
 
 AIExtractionRouter.post(
   "/landlord/extract",
   upload.fields([{ name: "document" }]),
+  authMiddleware,
   async (req, res) => {
     try {
-      // const { authorization } = req.headers;
-
-      // if (!authorization || authorization.length < 10) {
-      //   return res.status(400).json({ message: "Invalid token in header" });
-      // }
-      // const token = authorization.split("Bearer ")[1];
-      // const userId = jwt.verify(token, process.env.JWTSECRET).Id;
       if (!req.files || !req.files.document[0].path.endsWith(".pdf")) {
         return res
           .status(400)
@@ -34,9 +29,7 @@ AIExtractionRouter.post(
           .json({ error: "Could not extract text from PDF." });
       }
 
-      // const groqApiKey = process.env.GROQ_API_KEY;
-      const groqApiKey =
-        "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";
+      const groqApiKey = process.env.GROQ_API_KEY;
       if (!groqApiKey) {
         return res
           .status(500)
@@ -80,7 +73,7 @@ AIExtractionRouter.post(
     //   console.error("Error in AIExtractionRouter:", error);
     //   res.status(500).json({ error: "Internal Server Error" });
     // }
-  }
+  },
 );
 
 export default AIExtractionRouter;
@@ -90,6 +83,8 @@ export default AIExtractionRouter;
  * /landlord/extract:
  *   post:
  *     summary: Extract lease info from uploaded document
+ *     tags:
+ *       - USE AI
  *     consumes:
  *       - multipart/form-data
  *     requestBody:

@@ -30,7 +30,7 @@ const schema = new Schema(
 
     emailVerified: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     version: {
       type: Number,

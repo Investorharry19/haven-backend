@@ -20,7 +20,7 @@ WebHooksRouter.post(
   express.json({ type: "*/*" }),
   async (req, res) => {
     const signature = req.headers["verif-hash"];
-    if (!signature || signature !== "hendrix_abdoorl") {
+    if (!signature || signature !== process.env.FLW_SECRET_HASH) {
       console.warn("Invalid webhook signature");
       return res.status(401).send("Invalid signature");
     }
@@ -115,7 +115,7 @@ WebHooksRouter.post(
       console.error("Webhook handler error:", err);
       res.status(500).send("server error");
     }
-  }
+  },
 );
 
 export default WebHooksRouter;

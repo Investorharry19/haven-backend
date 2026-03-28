@@ -5,12 +5,12 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import http from "http";
+import swaggerUI from "swagger-ui-express";
+import { swaggerSpec } from "./utils/swagger.js";
 
 import UserRouter from "./routes/user.js";
 import PropertiesRouter from "./routes/property.js";
 import socketHandler from "./utils/socketHandlers.js";
-import swaggerJsdoc from "swagger-jsdoc";
-import * as swaggerUi from "swagger-ui-express";
 import LeaseRouter from "./routes/lease.js";
 import FlwWebhook from "./routes/flwWebhook.js";
 import HavenNotificationRouter from "./routes/notification.js";
@@ -24,34 +24,6 @@ import UpdatesRouter from "./routes/updates.js";
 
 // import
 
-const options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "Haven Properties API",
-      version: "1.0.0",
-    },
-    servers: [{ url: "http://localhost:4000" }],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
-      },
-    },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-  },
-  apis: ["./routes/*.js"],
-};
-
-const swaggerSpec = swaggerJsdoc(options);
-
 dotenv.config();
 const corsOptions = {
   origin: [
@@ -64,7 +36,16 @@ const corsOptions = {
 };
 
 const app = express();
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  "/api-docs",
+  swaggerUI.serve,
+  swaggerUI.setup(swaggerSpec, {
+    tagsSorter: (a, b) => {
+      const order = ["Auth", "Users", "Products", "Other"];
+      return order.indexOf(a) - order.indexOf(b);
+    },
+  })
+);
 app.use(cors(corsOptions));
 
 // app.use((req, res, next) => {

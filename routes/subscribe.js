@@ -5,7 +5,7 @@ import Subscription from "../schema/subscriptions.js";
 import UserSchema from "../schema/user.js";
 
 const SubscriptionRouter = express.Router();
-const FLW = "FLWSECK_TEST-9618edddae8547984e3aa6152599497e-X";
+const FLW = process.env.FLW_SECRET_KEY;
 
 SubscriptionRouter.post("/api/subscribe/create-sub", async (req, res) => {
   const { userId, currency = "NGN", name, email } = req.body;
@@ -30,7 +30,7 @@ SubscriptionRouter.post("/api/subscribe/create-sub", async (req, res) => {
           Authorization: `Bearer ${FLW}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     // Save a pending subscription record tied to tx_ref (optional but recommended)

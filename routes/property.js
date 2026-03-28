@@ -5,75 +5,123 @@ import cloud from "../utils/cloudinary.js";
 import { promisify } from "util";
 import jwt from "jsonwebtoken";
 import HavenLease from "../schema/lease.js";
+import { SendResponse } from "../utils/sendResponse.js";
+import { authMiddleware } from "../utils/authMiddleware.js";
 
 const PropertiesRouter = Router();
 
+// schema
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ApiResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           description: Indicates if the request was successful
+ *           example: true
+ *         message:
+ *           type: string
+ *           description: Optional message about the response
+ *           example: "Info about request"
+ *         data:
+ *           type: object
+ *           nullable: true
+ *           description: Optional data returned by the API
+ *           example: {}
+ */
+
 // get all properties
-PropertiesRouter.get("/dashboard/get-property", async (req, res) => {
-  try {
-    const { authorization } = req.headers;
-
-    if (!authorization || authorization.length < 10) {
-      return res.status(400).json({ message: "Invalid token in header" });
-    }
-
-    const token = authorization.split("Bearer ")[1];
-    const userId = jwt.verify(token, process.env.JWTSECRET).Id;
-
-    const properties = await HavenProperties.find({ userId });
-
-    res.status(200).json(properties);
-  } catch (error) {
-    if (error.name == "TokenExpiredError") {
-      return res.status(460).json({ message: "Token already used!" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(461).json({ message: "invalid token!" });
-    }
-    res.status(500).json(error);
-  }
-});
-
 /**
  * @swagger
  * /dashboard/get-property:
  *   get:
- *     summary: Retrieve properties for the logged-in user
- *     tags: [Properties]
+ *     summary: Retrieve all properties for the authenticated user
+ *     tags:
+ *       - Properties
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: A list of properties
+ *         description: Properties retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       460:
  *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       461:
  *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  */
+PropertiesRouter.get(
+  "/dashboard/get-property",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const userId = req.authBearerId;
+
+      const properties = await HavenProperties.find({ userId });
+
+      return SendResponse(res, {
+        success: true,
+        data: properties,
+        message: "Properties retrieved successfully",
+      });
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return SendResponse(res, {
+          success: false,
+          statusCode: 460,
+          message: "Token already used!",
+        });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return SendResponse(res, {
+          success: false,
+          statusCode: 461,
+          message: "Invalid token!",
+        });
+      }
+      return SendResponse(res, {
+        success: false,
+        statusCode: 500,
+        message: "Internal server error",
+        data: error,
+      });
+    }
+  },
+);
 
 PropertiesRouter.post(
   "/dashboard/add-property",
   upload.fields([{ name: "images" }]),
+  authMiddleware,
   async (req, res) => {
     try {
-      const { authorization } = req.headers;
-
-      if (!authorization || authorization.length < 10) {
-        return res.status(400).json({ message: "Invalid token in header" });
-      }
-
-      const token = authorization.split("Bearer ")[1];
-      const userId = jwt.verify(token, process.env.JWTSECRET).Id;
+      const userId = req.authBearerId;
 
       let imageUrl = [];
       let imageIdS = [];
@@ -83,7 +131,7 @@ PropertiesRouter.post(
           const result = await uploadPromise(image.path);
           imageUrl.push(result.secure_url);
           imageIdS.push(result.public_id);
-        })
+        }),
       );
 
       const newProperty = new HavenProperties({
@@ -95,38 +143,116 @@ PropertiesRouter.post(
 
       await newProperty.save();
 
-      res.status(200).json(newProperty);
+      return SendResponse(res, {
+        success: true,
+        data: newProperty,
+        message: "Property added successfully",
+      });
     } catch (error) {
-      if (error.name == "TokenExpiredError") {
-        return res.status(460).json({ message: "Token already used!" });
+      if (error.name === "TokenExpiredError") {
+        return SendResponse(res, {
+          success: false,
+          statusCode: 460,
+          message: "Token already used!",
+        });
       }
       if (error.name === "JsonWebTokenError") {
-        return res.status(461).json({ message: "invalid token!" });
+        return SendResponse(res, {
+          success: false,
+          statusCode: 461,
+          message: "Invalid token!",
+        });
       }
-      res.status(500).json(error);
+      return SendResponse(res, {
+        success: false,
+        statusCode: 500,
+        message: "Internal server error",
+        data: error,
+      });
     }
-  }
+  },
 );
 
+/**
+ * @swagger
+ * /dashboard/add-property:
+ *   post:
+ *     summary: Add a new property for the authenticated user
+ *     tags:
+ *       - Properties
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Property images
+ *               title:
+ *                 type: string
+ *                 description: Property title
+ *               description:
+ *                 type: string
+ *                 description: Property description
+ *               price:
+ *                 type: number
+ *                 description: Property price
+ *               location:
+ *                 type: string
+ *                 description: Property location
+ *     responses:
+ *       200:
+ *         description: Property added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
 PropertiesRouter.patch(
   "/dashboard/edit-property/:propertyId",
   upload.fields([{ name: "images" }]),
+  authMiddleware,
   async (req, res) => {
     try {
-      const { authorization } = req.headers;
       const { propertyId } = req.params;
-      if (!authorization || authorization.length < 10) {
-        return res.status(400).json({ message: "Invalid token in header" });
-      }
-
-      const token = authorization.split("Bearer ")[1];
-      const userId = jwt.verify(token, process.env.JWTSECRET);
+      const userId = req.authBearerId;
 
       const newProperty = req.body;
 
       if (req.files && req.files.images) {
         const oldProperty = await HavenProperties.findOne({
-          userId: userId.Id,
+          userId: userId,
           _id: propertyId,
         });
 
@@ -136,7 +262,7 @@ PropertiesRouter.patch(
             const result = await uploadPromise(image.path);
             newProperty.propertyImagesUrl = result.secure_url;
             newProperty.propertyImagesId = result.public_id;
-          })
+          }),
         );
 
         cloud.uploader
@@ -145,10 +271,10 @@ PropertiesRouter.patch(
       }
 
       const property = await HavenProperties.findOneAndUpdate(
-        { userId: userId.Id, _id: propertyId },
+        { userId: userId, _id: propertyId },
 
         { $set: newProperty },
-        { new: true }
+        { new: true },
       );
 
       if (!property) {
@@ -166,123 +292,123 @@ PropertiesRouter.patch(
       }
       res.status(500).json(error);
     }
-  }
-);
-
-PropertiesRouter.delete(
-  "/dashboard/delete-property/:propertyId",
-  async (req, res) => {
-    try {
-      const { authorization } = req.headers;
-      const { propertyId } = req.params;
-
-      if (!authorization || authorization.length < 10) {
-        return res.status(400).json({ message: "Invalid token in header" });
-      }
-
-      const token = authorization.split("Bearer ")[1];
-      const userId = jwt.verify(token, process.env.JWTSECRET);
-
-      const property = await HavenProperties.findOneAndDelete({
-        userId: userId.Id,
-        _id: propertyId,
-      });
-
-      if (!property) {
-        return res.status(404).json({
-          message: "Property with this Id not found",
-        });
-      }
-
-      cloud.uploader
-        .destroy(property.propertyImagesId)
-        .then(async (result) => {});
-
-      const leases = await HavenLease.find({ propertyId });
-
-      const leaseIds = leases.map((lease) => {
-        return lease._id;
-      });
-
-      await Promise.all(
-        leases.map((lease) => cloud.uploader.destroy(lease.avatarPublidId))
-      );
-      await Promise.all(
-        leaseIds.map((leaseId) => HavenLease.deleteOne({ _id: leaseId }))
-      );
-
-      res.status(200).json({ message: "Property Deleted sucessful" });
-
-      // de
-    } catch (error) {
-      if (error.name == "TokenExpiredError") {
-        return res.status(460).json({ message: "Token already used!" });
-      }
-      if (error.name === "JsonWebTokenError") {
-        return res.status(461).json({ message: "invalid token!" });
-      }
-      res.status(500).json(error);
-    }
-  }
+  },
 );
 
 /**
  * @swagger
- * /dashboard/add-property:
- *   post:
- *     summary: Upload a new property with images
- *     tags: [Properties]
+ * /dashboard/delete-property/{propertyId}:
+ *   delete:
+ *     summary: Delete a property by its ID for the authenticated user
+ *     tags:
+ *       - Properties
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - propertyName
- *               - propretyLocation
- *               - country
- *               - numberOfUnits
- *               - propertyType
- *               - descripton
- *               - images
- *             properties:
- *               propertyName:
- *                 type: string
- *                 example: Ocean View Apartment
- *               propretyLocation:
- *                 type: string
- *                 example: lekki phase 1
- *               country:
- *                 type: string
- *                 example: nigeria
- *               numberOfUnits:
- *                 type: integer
- *                 example: 12
- *               propertyType:
- *                 type: string
- *                 example: duplex
- *               descripton:
- *                 type: string
- *                 example: beautiful home close to the beach
- *               images:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: binary
+ *     parameters:
+ *       - in: path
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the property to delete
  *     responses:
  *       200:
- *         description: Property successfully created
+ *         description: Property deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
  *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       404:
+ *         description: Property with this ID not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       460:
  *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       461:
  *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
  */
+PropertiesRouter.delete(
+  "/dashboard/delete-property/:propertyId",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const userId = req.authBearerId;
+
+      const property = await HavenProperties.findOneAndDelete({
+        userId: userId,
+        _id: propertyId,
+      });
+
+      if (!property) {
+        return SendResponse(res, {
+          success: false,
+          statusCode: 404,
+          message: "Property with this Id not found",
+        });
+      }
+
+      // Delete property image from cloud
+      await cloud.uploader.destroy(property.propertyImagesId);
+
+      // Delete related leases and their avatars
+      const leases = await HavenLease.find({ propertyId });
+      await Promise.all(
+        leases.map((lease) => cloud.uploader.destroy(lease.avatarPublidId)),
+      );
+      await Promise.all(
+        leases.map((lease) => HavenLease.deleteOne({ _id: lease._id })),
+      );
+
+      return SendResponse(res, {
+        success: true,
+        message: "Property deleted successfully",
+      });
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return SendResponse(res, {
+          success: false,
+          statusCode: 460,
+          message: "Token already used!",
+        });
+      }
+      if (error.name === "JsonWebTokenError") {
+        return SendResponse(res, {
+          success: false,
+          statusCode: 461,
+          message: "Invalid token!",
+        });
+      }
+      return SendResponse(res, {
+        success: false,
+        statusCode: 500,
+        message: "Internal server error",
+        data: error,
+      });
+    }
+  },
+);
 
 export default PropertiesRouter;

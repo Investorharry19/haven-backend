@@ -1,427 +1,1111 @@
 import { Router } from "express";
-import UserSchema from "../schema/user.js";
-import jwt from "jsonwebtoken";
-import { OAuth2Client } from "google-auth-library";
-import * as argon2 from "argon2";
-import {
-  sendAccountActivationMail,
-  sendPasswordResetEmail,
-} from "../utils/sendEmail.js";
-import axios from "axios";
 import upload from "../utils/multer.js";
-import cloud from "../utils/cloudinary.js";
-import { promisify } from "util";
-import Subscription from "../schema/subscriptions.js";
-import { SendResponse } from "../utils/sendResponse.js";
-import { CurrentUser, LoginUser } from "../controllers/users.js";
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+import {
+  CurrentUser,
+  EditCompanyInfoNoImage,
+  EditPersonalDetailsNoImage,
+  EditPersonalDetailsWithImage,
+  EditUserSecurity,
+  ForgotPassword,
+  GoogleLogin,
+  LoginUser,
+  RegisterUser,
+  ResendEmailVerificationToken,
+  ResetPassword,
+  VerifyEmail,
+} from "../controllers/users.js";
+import { authMiddleware } from "../utils/authMiddleware.js";
+
 const UserRouter = Router();
 
-const hashPassword = async (password) => {
-  const result = await argon2.hash(password);
-  return result;
-};
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - fullName
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: strongPassword123
+ *               fullName:
+ *                 type: string
+ *                 example: John Doe
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User Registered
+ *       460:
+ *         description: Email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User with this email already exists
+ *                 data:
+ *                   type: object
+ *                   example: { code: 11000, keyPattern: { email: 1 }, status: 460 }
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal Server error
+ *                 data:
+ *                   type: object
+ *                   example: { 'error details'  }
+ */
+UserRouter.post("/auth/register", RegisterUser);
 
-const comparePassword = async (savedPassword, enteredPassword) => {
-  const isMatch = await argon2.verify(savedPassword, enteredPassword);
-  return isMatch;
-};
+/**
+ * @swagger
+ * /auth/verify-email:
+ *   post:
+ *     summary: Verify a user's email using token
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Email verified successfully
+ *                 data:
+ *                   type: object
+ *                   example: { _id: "64a1c5...", email: "user@example.com", emailVerified: true, ... }
+ *       460:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid or expired token
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { \* error details \* }
+ */
+UserRouter.post("/auth/verify-email", VerifyEmail);
 
-UserRouter.post("/auth/register", async (req, res) => {
-  try {
-    const passwordHash = await hashPassword(req.body.password);
-    const result = new UserSchema({
-      ...req.body,
-      passwordHash,
-      personal: {
-        fullName: req.body.fullName,
-      },
-    });
-    await result.save();
+/**
+ * @swagger
+ * /auth/resend-email-verification:
+ *   post:
+ *     summary: Resend email verification token
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Email verification token resent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Email verification token resent successfully
+ *       404:
+ *         description: No user found with the given email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: No user with this email
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
+UserRouter.post(
+  "/auth/resend-email-verification",
+  ResendEmailVerificationToken,
+);
 
-    const emailConfirmationToken = jwt.sign(
-      {
-        version: 0,
-        role: "emailConfirmation",
-        Id: result._id,
-      },
-      process.env.JWTSECRET,
-      {
-        expiresIn: "10m",
-      }
-    );
-
-    sendAccountActivationMail(
-      result.email,
-      req.body.fullName,
-      process.env.FRONTENDURL +
-        "/auth/verify-email?token=" +
-        emailConfirmationToken +
-        "&email=" +
-        result.email
-    );
-    res.status(200).json(result);
-  } catch (error) {
-    if (error.errorResponse?.code == 11000 && error.keyPattern.email) {
-      return res.status(460).json({ ...error, status: 460 });
-    }
-    res.status(500).json({ error });
-  }
-});
-
-UserRouter.post("/auth/verify-email", async (req, res) => {
-  try {
-    const token = req.body.token;
-    const vefified = jwt.verify(token, process.env.JWTSECRET);
-    const { Id } = vefified;
-    const user = await UserSchema.findOne({ _id: Id });
-    user.emailVerified = true;
-    user.version = user.version + 1;
-    await user.save();
-
-    res.status(200).json(user);
-  } catch (error) {
-    if (error.name == "JsonWebTokenError") {
-      return res.status(460).json({ error: "Invalid or expired token" });
-    }
-    res.status(500).json(error);
-  }
-});
-
-UserRouter.post("/auth/resend-email-verification-token", async (req, res) => {
-  try {
-    const email = req.body.email;
-    const result = await UserSchema.findOne({ email });
-    if (!result) {
-      return res.status(404).json({ message: "No user with this email" });
-    }
-
-    const emailConfirmationToken = jwt.sign(
-      {
-        version: 0,
-        role: "emailConfirmation",
-        Id: result._id,
-      },
-      process.env.JWTSECRET,
-      {
-        expiresIn: "10m",
-      }
-    );
-    sendAccountActivationMail(
-      result.email,
-      result.personal.fullName,
-      process.env.FRONTENDURL +
-        "/auth/verify-email?token=" +
-        emailConfirmationToken +
-        "&email=" +
-        result.email
-    );
-
-    res.status(200).json({ message: "Done" });
-  } catch (error) {
-    res.status(500).json({ error });
-  }
-});
-
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login a user and get a JWT token
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: strongPassword123
+ *     responses:
+ *       201:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: ""
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *       404:
+ *         description: Invalid username or password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid username or password
+ *       461:
+ *         description: Email not verified
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Email not verified
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details  }
+ */
 UserRouter.post("/auth/login", LoginUser);
 
+/**
+ * @swagger
+ * /auth/current-user:
+ *   get:
+ *     summary: Get currently authenticated user
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved current user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   example: {
+ *                     _id: "64a1c5...",
+ *                     email: "user@example.com",
+ *                     fullName: "John Doe",
+ *                     emailVerified: true,
+ *                     Token: "64a1c5...",
+ *                     Id: "64a1c5...",
+ *                     password: "",
+ *                     BusinessId: "businessId123",
+ *                     subscriptionData: { /* subscription details  }
+ *                   }
+ *       400:
+ *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token in header
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
 UserRouter.get("/auth/current-user", CurrentUser);
 
-UserRouter.post("/auth/forgot-password", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await UserSchema.findOne({ email });
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Send a password reset email
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Password reset email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Sent to user@example.com
+ *       404:
+ *         description: No user with this email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: No user with this email!
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
+UserRouter.post("/auth/forgot-password", ForgotPassword);
 
-    if (!user) {
-      return res.status(404).json({ message: "No user with this email!" });
-    }
-    const token = jwt.sign(
-      { Id: user._id, version: user.version ? user.version : 0 },
-      process.env.JWTSECRET,
-      { expiresIn: "10m" }
-    );
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset user password using a token
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *               - token
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: NewStrongPassword123
+ *               token:
+ *                 type: string
+ *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password reset successful
+ *       404:
+ *         description: No user found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: No user found!
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Token already used!
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token!
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
+UserRouter.post("/auth/reset-password", ResetPassword);
 
-    sendPasswordResetEmail(
-      email,
-      user.personal.fullName,
-      process.env.FRONTENDURL + "/auth/create-new-password?token=" + token
-    );
-    res.status(200).json({ message: "Sent to " + email });
-  } catch (error) {
-    res.status(500).json(error);
-  }
-});
-
-UserRouter.post("/auth/reset-password", async (req, res) => {
-  try {
-    const { password, token } = req.body;
-    const userId = jwt.verify(token, process.env.JWTSECRET);
-
-    const user = await UserSchema.findById(userId.Id);
-
-    if (!user) {
-      return res.status(404).json({ message: "No user found!" });
-    } else if (user.version !== userId.version) {
-      return res.status(460).json({ message: "Token already used!" });
-    }
-
-    const newPassword = await hashPassword(password);
-
-    user.passwordHash = newPassword;
-    user.version = user.version + 1;
-    await user.save();
-
-    // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
-    res.status(200).json({ message: "password reset sucessful" });
-  } catch (error) {
-    if (error.name == "TokenExpiredError") {
-      return res.status(460).json({ message: "Token already used!" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(461).json({ message: "invalid token!" });
-    }
-    res.status(500).json(error);
-  }
-});
-
-UserRouter.post("/account/google-auth", async (req, res) => {
-  try {
-    const { idToken } = req.body;
-
-    const response = await axios.get(
-      "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      }
-    );
-
-    const userExists = await UserSchema.findOne({ email: response.data.email });
-    if (userExists) {
-      const token = jwt.sign({ id: userExists._id }, process.env.JWTSECRET, {
-        expiresIn: "30d",
-      });
-
-      return res
-        .status(200)
-        .json({ user: userExists, token, message: "Logged in existing user" });
-    }
-    if (!userExists) {
-      const newUser = new UserSchema({
-        email: response.data.email,
-        profile: {
-          fullName: response.data.name,
-          avatarUrl: response.data.picture,
-        },
-        googleId: response.data.sub,
-        emaiVerified: true,
-      });
-
-      await newUser.save();
-      const token = jwt.sign({ id: newUser._id }, process.env.JWTSECRET, {
-        expiresIn: "30d",
-      });
-      return res
-        .status(200)
-        .json({ user: newUser, token, message: "new user registered" });
-    }
-  } catch (error) {
-    res.status(500).json({ error });
-  }
-});
+/**
+ * @swagger
+ * /account/google-auth:
+ *   post:
+ *     summary: Login or register a user via Google OAuth
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 example: eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...
+ *     responses:
+ *       200:
+ *         description: User logged in or registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged in existing user
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       example: { _id: "64a1c5...", email: "user@example.com", profile: { fullName: "John Doe", avatarUrl: "https://..." }, googleId: "google123", emailVerified: true }
+ *                     token:
+ *                       type: string
+ *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details  }
+ */
+UserRouter.post("/account/google-auth", GoogleLogin);
 
 // edits
 
 // personal details without image
-UserRouter.patch(
-  "/auth/edit-user",
 
-  async (req, res) => {
-    try {
-      const { authorization } = req.headers;
+/**
+ * @swagger
+ * /auth/edit-user:
+ *   patch:
+ *     summary: Edit personal details of a user (without image)
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               fullName:
+ *                 type: string
+ *                 example: John Doe
+ *               phone:
+ *                 type: string
+ *                 example: "1234567890"
+ *               // add any other fields inside personal
+ *     responses:
+ *       200:
+ *         description: User edit successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User edit successful
+ *       400:
+ *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token in header
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Token already used!
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token!
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
+UserRouter.patch("/auth/edit-user", authMiddleware, EditPersonalDetailsNoImage);
 
-      if (!authorization || authorization.length < 10) {
-        return res.status(400).json({ message: "Invalid token in header" });
-      }
-
-      const token = authorization.split("Bearer ")[1];
-      const userId = jwt.verify(token, process.env.JWTSECRET);
-      const flatData = {
-        email: req.body.email,
-        personal: { ...req.body },
-      };
-
-      const user = await UserSchema.findOneAndUpdate(
-        { _id: userId.Id },
-        { $set: flatData },
-        { new: true }
-      );
-
-      if (!user) {
-        return res.status(404).json({
-          message: "user not found",
-        });
-      }
-
-      res.status(200).json({ message: "User edit sucessful" });
-    } catch (error) {
-      if (error.name == "TokenExpiredError") {
-        return res.status(460).json({ message: "Token already used!" });
-      }
-      if (error.name === "JsonWebTokenError") {
-        return res.status(461).json({ message: "invalid token!" });
-      }
-      res.status(500).json(error);
-    }
-  }
-);
 //personal details with image
+/**
+ * @swagger
+ * /auth/edit-user-with-image:
+ *   patch:
+ *     summary: Edit personal details of a user including avatar image
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               fullName:
+ *                 type: string
+ *                 example: John Doe
+ *               phone:
+ *                 type: string
+ *                 example: "1234567890"
+ *               avatarFile:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: User edit successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: User edit successful
+ *       400:
+ *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token in header
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Token already used!
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token!
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details  }
+ */
 UserRouter.patch(
   "/auth/edit-user-with-image",
   upload.fields([{ name: "avatarFile" }]),
-  async (req, res) => {
-    try {
-      const { authorization } = req.headers;
-
-      if (!authorization || authorization.length < 10) {
-        return res.status(400).json({ message: "Invalid token in header" });
-      }
-
-      const token = authorization.split("Bearer ")[1];
-      const userId = jwt.verify(token, process.env.JWTSECRET);
-      const flatData = {
-        email: req.body.email,
-        personal: { ...req.body },
-      };
-      const user = await UserSchema.findOneAndUpdate(
-        { _id: userId.Id },
-
-        { $set: flatData },
-        { new: true }
-      );
-
-      if (!user) {
-        return res.status(404).json({
-          message: "user not found",
-        });
-      }
-
-      let imageUrl;
-      await Promise.all(
-        req.files.avatarFile.map(async (image) => {
-          const uploadPromise = promisify(cloud.uploader.upload);
-          const result = await uploadPromise(image.path);
-          imageUrl = {
-            avatarUrl: result.secure_url,
-            imageId: result.public_id,
-          };
-        })
-      );
-      if (user.personal.imageId) {
-        cloud.uploader
-          .destroy(user.personal.imageId)
-          .then(async (result) => {});
-      }
-      user.personal.avatarUrl = imageUrl.avatarUrl;
-      user.personal.imageId = imageUrl.imageId;
-      await user.save();
-      // sendPasswordResetEmail(email ,"Ameh" , process.env.BASR_URL + token)
-      res.status(200).json({ message: "User edit sucessful" });
-    } catch (error) {
-      if (error.name == "TokenExpiredError") {
-        return res.status(460).json({ message: "Token already used!" });
-      }
-      if (error.name === "JsonWebTokenError") {
-        return res.status(461).json({ message: "invalid token!" });
-      }
-      res.status(500).json(error);
-    }
-  }
+  authMiddleware,
+  EditPersonalDetailsWithImage,
 );
 
 // company details without image
+
+/**
+ * @swagger
+ * /auth/edit-company-info:
+ *   patch:
+ *     summary: Edit company information of the authenticated user
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               companyName: "ACME Inc"
+ *               address: "123 Main St"
+ *               phone: "1234567890"
+ *               website: "https://acme.com"
+ *     responses:
+ *       200:
+ *         description: Company info edit successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Company info edit successful
+ *                 data:
+ *                   type: object
+ *                   example: { _id: "64a1c5...", email: "user@example.com", companyInfo: { companyName: "ACME Inc", address: "123 Main St" } }
+ *       400:
+ *         description: Invalid token in header
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token in header
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Token already used!
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token!
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
 UserRouter.patch(
   "/auth/edit-company-info",
-
-  async (req, res) => {
-    try {
-      const { authorization } = req.headers;
-
-      if (!authorization || authorization.length < 10) {
-        return res.status(400).json({ message: "Invalid token in header" });
-      }
-
-      const token = authorization.split("Bearer ")[1];
-      const userId = jwt.verify(token, process.env.JWTSECRET);
-      let userPlaceHolder = await UserSchema.findOne({
-        _id: userId.Id,
-      });
-      const user = await UserSchema.findOneAndUpdate(
-        { _id: userId.Id },
-        {
-          companyInfo: req.body,
-        },
-        { new: true }
-      );
-
-      if (!user) {
-        return res.status(404).json({
-          message: "user not found",
-        });
-      }
-
-      res.status(200).json({ message: "Company info edit sucessful", user });
-    } catch (error) {
-      if (error.name == "TokenExpiredError") {
-        return res.status(460).json({ message: "Token already used!" });
-      }
-      if (error.name === "JsonWebTokenError") {
-        return res.status(461).json({ message: "invalid token!" });
-      }
-      res.status(500).json(error);
-    }
-  }
+  authMiddleware,
+  EditCompanyInfoNoImage,
 );
 
 // security
-UserRouter.patch("/auth/edit-user-security", async (req, res) => {
-  try {
-    const { authorization } = req.headers;
-    if (!authorization || authorization.length < 10) {
-      return res.status(400).json({ message: "Invalid token in header" });
-    }
-
-    const token = authorization.split("Bearer ")[1];
-    const userId = jwt.verify(token, process.env.JWTSECRET);
-    const user = await UserSchema.findOne({ _id: userId.Id });
-    if (!user) {
-      return res.status(404).json({ message: "user not found" });
-    }
-    const { currentPassword, newPassword, confirmPassword } = req.body;
-    const passwordMatch = await comparePassword(
-      user.passwordHash,
-      currentPassword
-    );
-    if (!passwordMatch) {
-      return res.status(400).json({ message: "Invalid current password" });
-    }
-    const newPasswordHash = await hashPassword(newPassword);
-    user.passwordHash = newPasswordHash;
-    user.version = user.version + 1;
-    await user.save();
-    res.status(200).json({ message: "Password updated successfully" });
-    return;
-  } catch (error) {
-    if (error.name == "TokenExpiredError") {
-      return res.status(460).json({ message: "Token already used!" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(461).json({ message: "invalid token!" });
-    }
-    res.status(500).json(error);
-  }
-});
+/**
+ * @swagger
+ * /auth/edit-user-security:
+ *   patch:
+ *     summary: Update user password
+ *     tags:
+ *       - Auth
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: OldPassword123
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: NewPassword123
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: NewPassword123
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password updated successfully
+ *       400:
+ *         description: Invalid token in header or invalid current password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid current password
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Token already used!
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid token!
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 data:
+ *                   type: object
+ *                   example: { /* error details   }
+ */
+UserRouter.patch("/auth/edit-user-security", authMiddleware, EditUserSecurity);
 
 export default UserRouter;
