@@ -29,7 +29,8 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",
     "https://haven-backend.onrender.com",
-    "https://haven-frontend-topaz.vercel.app",
+    "https://haven-frontend-chi.vercel.app/",
+    "https://haven-frontend-jpzs.onrender.com/",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true,
@@ -44,7 +45,7 @@ app.use(
       const order = ["Auth", "Users", "Products", "Other"];
       return order.indexOf(a) - order.indexOf(b);
     },
-  })
+  }),
 );
 app.use(cors(corsOptions));
 
