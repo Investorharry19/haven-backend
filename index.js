@@ -29,8 +29,8 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",
     "https://haven-backend.onrender.com",
-    "https://haven-frontend-chi.vercel.app/",
-    "https://haven-frontend-jpzs.onrender.com/",
+    "https://haven-frontend-chi.vercel.app",
+    "https://haven-frontend-jpzs.onrender.com",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true,
