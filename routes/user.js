@@ -413,7 +413,7 @@ UserRouter.post("/auth/login", LoginUser);
  *                   type: object
  *                   example: { /* error details   }
  */
-UserRouter.get("/auth/current-user", CurrentUser);
+UserRouter.get("/auth/current-user", authMiddleware, CurrentUser);
 
 /**
  * @swagger

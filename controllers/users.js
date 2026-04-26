@@ -202,6 +202,8 @@ export const CurrentUser = async (req, res) => {
     const userId = req.authBearerId;
     const user = await UserSchema.findOne({ _id: userId });
 
+    console.log({ user, userId });
+
     if (!user) {
       return SendResponse(res, {
         success: false,
@@ -305,6 +307,7 @@ export const ForgotPassword = async (req, res) => {
     console.log(
       process.env.FRONTENDURL + "/auth/create-new-password?token=" + token,
     );
+    console.log({ email });
     await sendPasswordResetEmail(
       email,
       user.personal.fullName,
@@ -317,6 +320,7 @@ export const ForgotPassword = async (req, res) => {
       message: `Sent to ${email}`,
     });
   } catch (error) {
+    console.log({ error });
     return SendResponse(res, {
       success: false,
       statusCode: 500,

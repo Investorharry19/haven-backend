@@ -5,7 +5,7 @@ const resend = new Resend("re_ctqLuDBq_GVZSAKymuEirFZGewTEUbGeg");
 
 export const sendPasswordResetEmail = async (email, username, link) => {
   const { data, error } = await resend.emails.send({
-    from: "Haven <no-reply@voxa.buzz>",
+    from: "Storely <no-reply@voxa.buzz>",
     to: email,
     subject: "Reset your Heaven password",
     html: `<!DOCTYPE html>
@@ -243,7 +243,7 @@ export const sendLeaseFormEmail = async (
   email,
   username,
   link,
-  propertyName
+  propertyName,
 ) => {
   const { data, error } = resend.emails.send({
     from: "Haven <no-reply@voxa.buzz>",
