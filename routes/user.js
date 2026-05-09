@@ -668,7 +668,7 @@ UserRouter.post("/account/google-auth", GoogleLogin);
  *               phone:
  *                 type: string
  *                 example: "1234567890"
- *               // add any other fields inside personal
+ *               # add any other fields inside personal
  *     responses:
  *       200:
  *         description: User edit successful
