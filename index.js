@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
@@ -23,8 +23,6 @@ import PerformanceRouter from "./routes/performance.js";
 import UpdatesRouter from "./routes/updates.js";
 
 // import
-
-dotenv.config();
 const corsOptions = {
   origin: [
     "http://localhost:3000",
@@ -114,6 +112,7 @@ app.get("/", (req, res) => {
         <h1>Welcome to Haven Backend API</h1>
         <p>Your Property Management Solution</p>
         <a href="/api-docs">View API Documentation</a>
+        <p> last update on 20/05/2026 </p>
       </div>
     </body>
     </html>

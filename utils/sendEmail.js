@@ -1,11 +1,10 @@
-import { createTransport } from "nodemailer";
 import { Resend } from "resend";
 
-const resend = new Resend("re_ctqLuDBq_GVZSAKymuEirFZGewTEUbGeg");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendPasswordResetEmail = async (email, username, link) => {
   const { data, error } = await resend.emails.send({
-    from: "Storely <no-reply@voxa.buzz>",
+    from: "Storely <no-reply@haven.thukool.online>",
     to: email,
     subject: "Reset your Heaven password",
     html: `<!DOCTYPE html>
@@ -124,7 +123,7 @@ export const sendPasswordResetEmail = async (email, username, link) => {
 
 export const sendAccountActivationMail = async (email, username, link) => {
   const { data, error } = resend.emails.send({
-    from: "Haven <no-reply@voxa.buzz>",
+    from: "Haven <no-reply@haven.thukool.online>",
     to: email,
     subject: "Activate your Heaven account",
     html: `<!DOCTYPE html>
@@ -246,7 +245,7 @@ export const sendLeaseFormEmail = async (
   propertyName,
 ) => {
   const { data, error } = resend.emails.send({
-    from: "Haven <no-reply@voxa.buzz>",
+    from: "Haven <no-reply@haven.thukool.online>",
     to: email,
     subject: `Lease Form for ${propertyName}`,
     html: ` <!DOCTYPE html>
@@ -356,7 +355,7 @@ export const sendLeaseFormEmail = async (
 
 export const sendFlwWebhookEmail = async (email, username, payload) => {
   const { data, error } = await resend.emails.send({
-    from: "Haven <no-reply@voxa.buzz>",
+    from: "Haven <no-reply@haven.thukool.online>",
     to: email,
     subject: "Flutterwave Webhook",
     html: `
@@ -370,7 +369,7 @@ export const sendFlwWebhookEmail = async (email, username, payload) => {
 
 export const sendMagicLink = async (email, link, name) => {
   const { data, error } = resend.emails.send({
-    from: "Haven <no-reply@voxa.buzz>",
+    from: "Haven <no-reply@haven.thukool.online>",
     to: email,
     subject: `Login to your Haven Account`,
     html: `<!DOCTYPE html>
