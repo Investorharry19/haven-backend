@@ -115,6 +115,79 @@ PropertiesRouter.get(
   },
 );
 
+/**
+ * @swagger
+ * /dashboard/add-property:
+ *   post:
+ *     summary: Add a new property for the authenticated user
+ *     tags:
+ *       - Properties
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - images
+ *               - propertyName
+ *               - propertyLocation
+ *               - country
+ *               - numberOfUnits
+ *               - propertyType
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Property images
+ *               propertyName:
+ *                 type: string
+ *                 description: Property name
+ *               propertyLocation:
+ *                 type: string
+ *                 description: Property location
+ *               country:
+ *                 type: string
+ *                 description: Property country
+ *               numberOfUnits:
+ *                 type: number
+ *                 description: Number of units in the property
+ *               propertyType:
+ *                 type: string
+ *                 description: Type of property
+ *               description:
+ *                 type: string
+ *                 description: Property description
+ *     responses:
+ *       200:
+ *         description: Property added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       460:
+ *         description: Token already used
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       461:
+ *         description: Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
 PropertiesRouter.post(
   "/dashboard/add-property",
   upload.fields([{ name: "images" }]),
@@ -175,15 +248,22 @@ PropertiesRouter.post(
 
 /**
  * @swagger
- * /dashboard/add-property:
- *   post:
- *     summary: Add a new property for the authenticated user
+ * /dashboard/edit-property/{propertyId}:
+ *   patch:
+ *     summary: Edit a property by its ID for the authenticated user
  *     tags:
  *       - Properties
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the property to edit
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         multipart/form-data:
  *           schema:
@@ -194,50 +274,75 @@ PropertiesRouter.post(
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Property images
- *               title:
+ *                 description: Replacement property image
+ *               propertyName:
  *                 type: string
  *                 description: Property title
+ *               propertyLocation:
+ *                 type: string
+ *                 description: Property location
+ *               country:
+ *                 type: string
+ *                 description: Property country
+ *               numberOfUnits:
+ *                 type: number
+ *                 description: Number of units in the property
+ *               propertyType:
+ *                 type: string
+ *                 description: Type of property
  *               description:
  *                 type: string
  *                 description: Property description
- *               price:
- *                 type: number
- *                 description: Property price
- *               location:
- *                 type: string
- *                 description: Property location
  *     responses:
  *       200:
- *         description: Property added successfully
+ *         description: Property updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
- *       400:
- *         description: Invalid token in header
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Property edit sucessful
+ *                 property:
+ *                   type: object
+ *       404:
+ *         description: Property with this ID not found
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Property with this Id not found
  *       460:
  *         description: Token already used
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Token already used!
  *       461:
  *         description: Invalid token
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: invalid token!
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ApiResponse'
+ *               type: object
+ *               additionalProperties: true
  */
 PropertiesRouter.patch(
   "/dashboard/edit-property/:propertyId",
