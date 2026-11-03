@@ -1,1 +1,0 @@
-export default AutorizeLandlord = (aut) => {};
