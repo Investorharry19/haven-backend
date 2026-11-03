@@ -12,6 +12,7 @@ import UserSchema from "../schema/user.ts";
 import { SendResponse } from "../utils/sendResponse.ts";
 import { Request, Response } from "express";
 import { coudinaryResponse } from "../types/cloudinary.ts";
+import { verifyToken } from "../utils/jwt.ts";
 
 const JWT_SECRET = process.env.JWTSECRET as string;
 
